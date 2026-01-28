@@ -1,0 +1,292 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { supabase, type UserProfile } from "@/lib/supabase";
+
+const { id } = Astro.params;
+
+// Verificar autenticación
+const { data: { session } } = await supabase.auth.getSession();
+let user: UserProfile | null = null;
+
+if (session) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+  user = data;
+}
+
+// Obtener la giftcard
+const { data: giftcard } = await supabase
+  .from('giftcards')
+  .select(`
+    *,
+    category:giftcard_categories(*)
+  `)
+  .eq('id', id)
+  .single();
+
+if (!giftcard) {
+  return Astro.redirect('/tienda');
+}
+
+// Obtener códigos disponibles
+const { count: availableCodes } = await supabase
+  .from('giftcard_codes')
+  .select('*', { count: 'exact', head: true })
+  .eq('giftcard_id', id)
+  .eq('is_sold', false);
+
+// Manejar compra
+let purchaseSuccess = false;
+let purchaseError = "";
+let purchasedCode = "";
+
+if (Astro.request.method === "POST" && session) {
+  try {
+    // Obtener un código disponible
+    const { data: code, error: codeError } = await supabase
+      .from('giftcard_codes')
+      .select('*')
+      .eq('giftcard_id', id)
+      .eq('is_sold', false)
+      .limit(1)
+      .single();
+    
+    if (codeError || !code) {
+      purchaseError = "No hay códigos disponibles en este momento";
+    } else {
+      // Crear compra
+      const { data: purchase, error: purchaseErr } = await supabase
+        .from('purchases')
+        .insert({
+          user_id: session.user.id,
+          giftcard_id: id,
+          giftcard_code_id: code.id,
+          amount: giftcard.price,
+          status: 'completed'
+        })
+        .select()
+        .single();
+      
+      if (purchaseErr) {
+        purchaseError = "Error al procesar la compra";
+      } else {
+        // Marcar código como vendido
+        await supabase
+          .from('giftcard_codes')
+          .update({ 
+            is_sold: true, 
+            buyer_id: session.user.id,
+            sold_at: new Date().toISOString()
+          })
+          .eq('id', code.id);
+        
+        // Decrementar stock
+        await supabase
+          .from('giftcards')
+          .update({ stock: giftcard.stock - 1 })
+          .eq('id', id);
+        
+        purchaseSuccess = true;
+        purchasedCode = code.code;
+      }
+    }
+  } catch (e: any) {
+    purchaseError = e.message || "Error al procesar la compra";
+  }
+}
+---
+
+<Layout title={giftcard.name}>
+  <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+    <!-- Header -->
+    <header class="bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <a href="/tienda" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Volver a la Tienda
+          </a>
+          {user ? (
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-400">Hola, {user.full_name}</span>
+              <a href="/auth/logout" class="text-red-400 hover:text-red-300 text-sm">Salir</a>
+            </div>
+          ) : (
+            <a href="/auth/login" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium">
+              Iniciar Sesión
+            </a>
+          )}
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-12">
+      {purchaseSuccess ? (
+        <!-- Compra exitosa -->
+        <div class="max-w-2xl mx-auto">
+          <div class="bg-green-500/10 border border-green-500/30 rounded-2xl p-8 text-center">
+            <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-4">¡Compra Exitosa!</h1>
+            <p class="text-gray-400 mb-8">Tu código de {giftcard.name} está listo</p>
+            
+            <div class="bg-slate-800 rounded-xl p-6 mb-6">
+              <p class="text-sm text-gray-400 mb-2">Tu Código:</p>
+              <div class="flex items-center justify-center gap-4">
+                <code id="giftcode" class="text-2xl font-mono font-bold text-primary tracking-wider">
+                  {purchasedCode}
+                </code>
+                <button 
+                  onclick="navigator.clipboard.writeText(document.getElementById('giftcode').textContent.trim()); this.innerHTML = '✓ Copiado';"
+                  class="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                >
+                  Copiar
+                </button>
+              </div>
+            </div>
+
+            <p class="text-yellow-400 text-sm mb-8">
+              ⚠️ Guarda este código en un lugar seguro. No podrás verlo de nuevo.
+            </p>
+
+            <div class="flex gap-4 justify-center">
+              <a href="/mis-compras" class="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                Ver Mis Compras
+              </a>
+              <a href="/tienda" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                Seguir Comprando
+              </a>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <!-- Detalle del producto -->
+        <div class="max-w-5xl mx-auto">
+          <div class="grid md:grid-cols-2 gap-12">
+            <!-- Imagen -->
+            <div class="relative">
+              <div class="aspect-square bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl flex items-center justify-center overflow-hidden giftcard-shine">
+                {giftcard.image_url ? (
+                  <img src={giftcard.image_url} alt={giftcard.name} class="w-2/3 object-contain" />
+                ) : (
+                  <div class="text-8xl font-bold text-white/20">{giftcard.name?.charAt(0)}</div>
+                )}
+              </div>
+              {giftcard.original_price && giftcard.original_price > giftcard.price && (
+                <span class="absolute top-4 left-4 bg-green-500 text-white text-sm font-bold px-3 py-1 rounded-full">
+                  Ahorra ${(giftcard.original_price - giftcard.price).toFixed(2)}
+                </span>
+              )}
+            </div>
+
+            <!-- Info -->
+            <div class="flex flex-col">
+              <div class="mb-2">
+                <a href={`/tienda?categoria=${giftcard.category_id}`} class="text-primary text-sm hover:underline">
+                  {giftcard.category?.name}
+                </a>
+              </div>
+              
+              <h1 class="text-3xl font-bold text-white mb-4">{giftcard.name}</h1>
+              
+              <div class="flex items-baseline gap-4 mb-6">
+                <span class="text-4xl font-bold text-white">${giftcard.price.toFixed(2)}</span>
+                {giftcard.original_price && giftcard.original_price > giftcard.price && (
+                  <span class="text-xl text-gray-500 line-through">${giftcard.original_price.toFixed(2)}</span>
+                )}
+                <span class="bg-primary text-white text-lg font-bold px-4 py-1 rounded-lg">
+                  Valor: ${giftcard.denomination}
+                </span>
+              </div>
+
+              <p class="text-gray-400 mb-8 leading-relaxed">
+                {giftcard.description || `Giftcard de ${giftcard.name} con valor de $${giftcard.denomination} ${giftcard.currency}. Código entregado de forma instantánea tras la compra.`}
+              </p>
+
+              <!-- Stock Info -->
+              <div class="flex items-center gap-4 mb-8">
+                <div class:list={[
+                  "flex items-center gap-2 px-4 py-2 rounded-lg",
+                  (availableCodes || 0) > 10 ? "bg-green-500/20 text-green-400" : 
+                  (availableCodes || 0) > 0 ? "bg-yellow-500/20 text-yellow-400" : 
+                  "bg-red-500/20 text-red-400"
+                ]}>
+                  <span class="w-2 h-2 rounded-full bg-current"></span>
+                  <span class="font-medium">
+                    {(availableCodes || 0) > 10 ? "En Stock" : 
+                     (availableCodes || 0) > 0 ? `Solo ${availableCodes} disponibles` : 
+                     "Agotado"}
+                  </span>
+                </div>
+              </div>
+
+              {purchaseError && (
+                <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+                  <p class="text-red-400 text-sm">{purchaseError}</p>
+                </div>
+              )}
+
+              <!-- Botón Comprar -->
+              {user ? (
+                (availableCodes || 0) > 0 ? (
+                  <form method="POST">
+                    <button 
+                      type="submit"
+                      class="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50"
+                    >
+                      Comprar Ahora - ${giftcard.price.toFixed(2)}
+                    </button>
+                  </form>
+                ) : (
+                  <button 
+                    disabled
+                    class="w-full bg-gray-600 text-gray-400 py-4 rounded-xl font-semibold text-lg cursor-not-allowed"
+                  >
+                    Agotado
+                  </button>
+                )
+              ) : (
+                <a 
+                  href={`/auth/login?redirect=/giftcard/${id}`}
+                  class="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] text-center block"
+                >
+                  Inicia Sesión para Comprar
+                </a>
+              )}
+
+              <!-- Info adicional -->
+              <div class="mt-8 space-y-4">
+                <div class="flex items-center gap-3 text-gray-400">
+                  <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  Entrega instantánea
+                </div>
+                <div class="flex items-center gap-3 text-gray-400">
+                  <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  Código 100% verificado
+                </div>
+                <div class="flex items-center gap-3 text-gray-400">
+                  <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  Soporte 24/7
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  </div>
+</Layout>

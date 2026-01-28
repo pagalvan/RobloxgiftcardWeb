@@ -1,0 +1,175 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { supabase } from "@/lib/supabase";
+
+// Verificar si el usuario ya está autenticado
+const { data: { session } } = await supabase.auth.getSession();
+if (session) {
+  // Obtener rol del usuario
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single();
+  
+  // Redirigir según el rol
+  if (profile?.role === 'admin') {
+    return Astro.redirect('/admin/dashboard');
+  } else if (profile?.role === 'proveedor') {
+    return Astro.redirect('/proveedor/dashboard');
+  } else {
+    return Astro.redirect('/tienda');
+  }
+}
+---
+
+<Layout title="Inicio">
+  <div class="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
+    <!-- Hero Section -->
+    <header class="container mx-auto px-4 py-6">
+      <nav class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <span class="text-2xl font-bold text-white">GiftCard Store</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/auth/login" class="text-white hover:text-primary transition-colors font-medium">
+            Iniciar Sesión
+          </a>
+          <a href="/auth/register" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-all hover:scale-105">
+            Registrarse
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container mx-auto px-4 py-20">
+      <div class="text-center max-w-4xl mx-auto">
+        <div class="mb-8 animate-float">
+          <div class="inline-block p-4 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20">
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Roblox_logo_2022.svg/512px-Roblox_logo_2022.svg.png" 
+              alt="Roblox" 
+              class="h-20 w-auto"
+            />
+          </div>
+        </div>
+        
+        <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6">
+          Tus <span class="text-primary animate-pulse-glow inline-block">GiftCards</span> 
+          <br />al Mejor Precio
+        </h1>
+        
+        <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
+          Compra giftcards de Roblox, PlayStation, Xbox y más de forma segura y rápida. 
+          Entrega instantánea y los mejores precios del mercado.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a 
+            href="/auth/register" 
+            class="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 hover:shadow-lg hover:shadow-primary/50"
+          >
+            Comenzar Ahora
+          </a>
+          <a 
+            href="/tienda" 
+            class="bg-white/10 backdrop-blur hover:bg-white/20 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all border border-white/20"
+          >
+            Ver Catálogo
+          </a>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="grid md:grid-cols-3 gap-8 mt-32">
+        <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105">
+          <div class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">Entrega Instantánea</h3>
+          <p class="text-gray-400">Recibe tu código al momento de la compra. Sin esperas, sin complicaciones.</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105">
+          <div class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">100% Seguro</h3>
+          <p class="text-gray-400">Códigos verificados y protegidos. Tu compra está garantizada.</p>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105">
+          <div class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">Mejores Precios</h3>
+          <p class="text-gray-400">Ofertas exclusivas y descuentos en todas nuestras giftcards.</p>
+        </div>
+      </div>
+
+      <!-- Popular Cards -->
+      <div class="mt-32">
+        <h2 class="text-3xl font-bold text-white text-center mb-12">Giftcards Populares</h2>
+        <div class="grid md:grid-cols-4 gap-6">
+          <div class="group relative bg-gradient-to-br from-red-500 to-red-700 rounded-2xl p-6 giftcard-shine overflow-hidden card-hover cursor-pointer">
+            <div class="relative z-10">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Roblox_logo_2022.svg/512px-Roblox_logo_2022.svg.png" alt="Roblox" class="h-12 mb-4 brightness-0 invert" />
+              <p class="text-white/80 text-sm">Desde</p>
+              <p class="text-2xl font-bold text-white">$4.99</p>
+            </div>
+          </div>
+          
+          <div class="group relative bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 giftcard-shine overflow-hidden card-hover cursor-pointer">
+            <div class="relative z-10">
+              <div class="text-3xl font-bold text-white mb-4">PlayStation</div>
+              <p class="text-white/80 text-sm">Desde</p>
+              <p class="text-2xl font-bold text-white">$9.99</p>
+            </div>
+          </div>
+          
+          <div class="group relative bg-gradient-to-br from-green-600 to-green-800 rounded-2xl p-6 giftcard-shine overflow-hidden card-hover cursor-pointer">
+            <div class="relative z-10">
+              <div class="text-3xl font-bold text-white mb-4">Xbox</div>
+              <p class="text-white/80 text-sm">Desde</p>
+              <p class="text-2xl font-bold text-white">$9.99</p>
+            </div>
+          </div>
+          
+          <div class="group relative bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 giftcard-shine overflow-hidden card-hover cursor-pointer">
+            <div class="relative z-10">
+              <div class="text-3xl font-bold text-white mb-4">Steam</div>
+              <p class="text-white/80 text-sm">Desde</p>
+              <p class="text-2xl font-bold text-white">$4.99</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="container mx-auto px-4 py-12 border-t border-white/10 mt-20">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <span class="text-lg font-bold text-white">GiftCard Store</span>
+        </div>
+        <p class="text-gray-400 text-sm">© 2026 GiftCard Store. Todos los derechos reservados.</p>
+      </div>
+    </footer>
+  </div>
+</Layout>

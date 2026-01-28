@@ -1,0 +1,8 @@
+---
+import { supabase } from "@/lib/supabase";
+
+// Cerrar sesión
+await supabase.auth.signOut();
+
+return Astro.redirect('/');
+---
