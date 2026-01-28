@@ -1,23 +1,25 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import { supabase } from "@/lib/supabase";
+import { supabase, type GiftCardCategory } from "@/lib/supabase";
 import { generateSlug } from "@/lib/utils";
 
 // Verificar autenticación y rol de admin
-const { data: { session } } = await supabase.auth.getSession();
+const {
+  data: { session },
+} = await supabase.auth.getSession();
 
 if (!session) {
-  return Astro.redirect('/auth/login');
+  return Astro.redirect("/auth/login");
 }
 
 const { data: user } = await supabase
-  .from('profiles')
-  .select('*')
-  .eq('id', session.user.id)
+  .from("profiles")
+  .select("*")
+  .eq("id", session.user.id)
   .single();
 
-if (user?.role !== 'admin') {
-  return Astro.redirect('/tienda');
+if (user?.role !== "admin") {
+  return Astro.redirect("/tienda");
 }
 
 // Manejar acciones
@@ -34,13 +36,13 @@ if (Astro.request.method === "POST") {
     const imageUrl = formData.get("image_url")?.toString() || "";
 
     const { error: createError } = await supabase
-      .from('giftcard_categories')
+      .from("giftcard_categories")
       .insert({
         name,
         slug: generateSlug(name),
         description,
         image_url: imageUrl,
-        is_active: true
+        is_active: true,
       });
 
     if (createError) {
@@ -51,9 +53,9 @@ if (Astro.request.method === "POST") {
   } else if (action === "delete") {
     const id = formData.get("id")?.toString();
     const { error: deleteError } = await supabase
-      .from('giftcard_categories')
+      .from("giftcard_categories")
       .delete()
-      .eq('id', id);
+      .eq("id", id);
 
     if (deleteError) {
       error = deleteError.message;
@@ -63,32 +65,46 @@ if (Astro.request.method === "POST") {
   } else if (action === "toggle") {
     const id = formData.get("id")?.toString();
     const isActive = formData.get("is_active") === "true";
-    
+
     await supabase
-      .from('giftcard_categories')
+      .from("giftcard_categories")
       .update({ is_active: !isActive })
-      .eq('id', id);
-    
+      .eq("id", id);
+
     message = "Estado actualizado";
   }
 }
 
 // Obtener categorías
 const { data: categories } = await supabase
-  .from('giftcard_categories')
-  .select('*')
-  .order('created_at', { ascending: false });
+  .from("giftcard_categories")
+  .select("*")
+  .order("created_at", { ascending: false });
 ---
 
 <Layout title="Gestionar Categorías">
   <div class="min-h-screen bg-slate-900">
     <!-- Sidebar -->
-    <aside class="fixed left-0 top-0 w-64 h-full bg-slate-800 border-r border-white/10 z-40">
+    <aside
+      class="fixed left-0 top-0 w-64 h-full bg-slate-800 border-r border-white/10 z-40"
+    >
       <div class="p-6">
         <a href="/" class="flex items-center gap-2">
-          <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <div
+            class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+          >
+            <svg
+              class="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
             </svg>
           </div>
           <span class="text-lg font-bold text-white">Admin Panel</span>
@@ -96,42 +112,140 @@ const { data: categories } = await supabase
       </div>
 
       <nav class="px-4 space-y-1">
-        <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+        <a
+          href="/admin/dashboard"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+            ></path>
           </svg>
           Dashboard
         </a>
-        <a href="/admin/giftcards" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+        <a
+          href="/admin/giftcards"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+            ></path>
           </svg>
           GiftCards
         </a>
-        <a href="/admin/categorias" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/20 text-primary">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+        <a
+          href="/admin/categorias"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/20 text-primary"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+            ></path>
           </svg>
           Categorías
         </a>
-        <a href="/admin/usuarios" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        <a
+          href="/admin/usuarios"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+            ></path>
           </svg>
           Usuarios
         </a>
-        <a href="/admin/ventas" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        <a
+          href="/admin/ventas"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            ></path>
           </svg>
           Ventas
         </a>
       </nav>
 
-      <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-        <a href="/auth/logout" class="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg text-sm w-full">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+      <div
+        class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10"
+      >
+        <a
+          href="/tienda"
+          class="flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-white/5 rounded-lg text-sm w-full mb-1"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+          </svg>
+          Ver Tienda
+        </a>
+        <a
+          href="/auth/logout"
+          class="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg text-sm w-full"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            ></path>
           </svg>
           Cerrar Sesión
         </a>
@@ -145,82 +259,135 @@ const { data: categories } = await supabase
           <h1 class="text-3xl font-bold text-white">Categorías</h1>
           <p class="text-gray-400 mt-1">Gestiona las categorías de productos</p>
         </div>
-        <button 
+        <button
           onclick="document.getElementById('createModal').classList.remove('hidden')"
           class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
           </svg>
           Nueva Categoría
         </button>
       </div>
 
-      {message && (
-        <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-6">
-          <p class="text-green-400">{message}</p>
-        </div>
-      )}
+      {
+        message && (
+          <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-6">
+            <p class="text-green-400">{message}</p>
+          </div>
+        )
+      }
 
-      {error && (
-        <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-          <p class="text-red-400">{error}</p>
-        </div>
-      )}
+      {
+        error && (
+          <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+            <p class="text-red-400">{error}</p>
+          </div>
+        )
+      }
 
       <!-- Grid de Categorías -->
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories && categories.length > 0 ? (
-          categories.map((cat) => (
-            <div class="bg-slate-800/50 rounded-xl border border-white/10 overflow-hidden">
-              <div class="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                {cat.image_url ? (
-                  <img src={cat.image_url} alt={cat.name} class="h-16 object-contain" />
-                ) : (
-                  <span class="text-5xl font-bold text-white/20">{cat.name?.charAt(0)}</span>
-                )}
-              </div>
-              <div class="p-5">
-                <div class="flex items-start justify-between gap-4 mb-3">
-                  <div>
-                    <h3 class="font-semibold text-white">{cat.name}</h3>
-                    <p class="text-sm text-gray-400 mt-1">{cat.description || 'Sin descripción'}</p>
+        {
+          categories && categories.length > 0 ? (
+            categories.map((cat: GiftCardCategory) => (
+              <div class="bg-slate-800/50 rounded-xl border border-white/10 overflow-hidden">
+                <div class="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  {cat.image_url ? (
+                    <img
+                      src={cat.image_url}
+                      alt={cat.name}
+                      class="h-16 object-contain"
+                    />
+                  ) : (
+                    <span class="text-5xl font-bold text-white/20">
+                      {cat.name?.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div class="p-5">
+                  <div class="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                      <h3 class="font-semibold text-white">{cat.name}</h3>
+                      <p class="text-sm text-gray-400 mt-1">
+                        {cat.description || "Sin descripción"}
+                      </p>
+                    </div>
+                    <form method="POST" class="inline">
+                      <input type="hidden" name="action" value="toggle" />
+                      <input type="hidden" name="id" value={cat.id} />
+                      <input
+                        type="hidden"
+                        name="is_active"
+                        value={cat.is_active.toString()}
+                      />
+                      <button
+                        type="submit"
+                        class:list={[
+                          "px-2 py-1 rounded-full text-xs font-medium transition-all",
+                          cat.is_active
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-red-500/20 text-red-400",
+                        ]}
+                      >
+                        {cat.is_active ? "Activa" : "Inactiva"}
+                      </button>
+                    </form>
                   </div>
-                  <form method="POST" class="inline">
-                    <input type="hidden" name="action" value="toggle" />
-                    <input type="hidden" name="id" value={cat.id} />
-                    <input type="hidden" name="is_active" value={cat.is_active.toString()} />
-                    <button type="submit" class:list={[
-                      "px-2 py-1 rounded-full text-xs font-medium transition-all",
-                      cat.is_active ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                    ]}>
-                      {cat.is_active ? 'Activa' : 'Inactiva'}
-                    </button>
-                  </form>
-                </div>
-                <div class="flex items-center justify-end pt-4 border-t border-white/10">
-                  <form method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar esta categoría?')">
-                    <input type="hidden" name="action" value="delete" />
-                    <input type="hidden" name="id" value={cat.id} />
-                    <button type="submit" class="text-red-400 hover:text-red-300 text-sm">
-                      Eliminar
-                    </button>
-                  </form>
+                  <div class="flex items-center justify-end pt-4 border-t border-white/10">
+                    <form
+                      method="POST"
+                      class="inline"
+                      onsubmit="return confirm('¿Estás seguro de eliminar esta categoría?')"
+                    >
+                      <input type="hidden" name="action" value="delete" />
+                      <input type="hidden" name="id" value={cat.id} />
+                      <button
+                        type="submit"
+                        class="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Eliminar
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div class="col-span-full text-center py-20">
+              <div class="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  class="w-12 h-12 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-white mb-2">
+                No hay categorías
+              </h3>
+              <p class="text-gray-400">
+                Crea la primera categoría para organizar tus productos
+              </p>
             </div>
-          ))
-        ) : (
-          <div class="col-span-full text-center py-20">
-            <div class="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg class="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-white mb-2">No hay categorías</h3>
-            <p class="text-gray-400">Crea la primera categoría para organizar tus productos</p>
-          </div>
-        )}
+          )
+        }
       </div>
     </main>
   </div>
@@ -228,32 +395,66 @@ const { data: categories } = await supabase
   <!-- Modal Crear -->
   <div id="createModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
     <div class="flex min-h-screen items-center justify-center p-4">
-      <div class="fixed inset-0 bg-black/70" onclick="document.getElementById('createModal').classList.add('hidden')"></div>
-      <div class="relative bg-slate-800 rounded-xl w-full max-w-md p-6 border border-white/10">
+      <div
+        class="fixed inset-0 bg-black/70"
+        onclick="document.getElementById('createModal').classList.add('hidden')"
+      >
+      </div>
+      <div
+        class="relative bg-slate-800 rounded-xl w-full max-w-md p-6 border border-white/10"
+      >
         <h2 class="text-xl font-bold text-white mb-6">Nueva Categoría</h2>
         <form method="POST" class="space-y-4">
           <input type="hidden" name="action" value="create" />
-          
+
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Nombre</label>
-            <input type="text" name="name" required class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Ej: Roblox" />
+            <label class="block text-sm font-medium text-gray-300 mb-2"
+              >Nombre</label
+            >
+            <input
+              type="text"
+              name="name"
+              required
+              class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Ej: Roblox"
+            />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">URL de Imagen</label>
-            <input type="url" name="image_url" class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary" placeholder="https://..." />
+            <label class="block text-sm font-medium text-gray-300 mb-2"
+              >URL de Imagen</label
+            >
+            <input
+              type="url"
+              name="image_url"
+              class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="https://..."
+            />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">Descripción</label>
-            <textarea name="description" rows="3" class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Descripción de la categoría..."></textarea>
+            <label class="block text-sm font-medium text-gray-300 mb-2"
+              >Descripción</label
+            >
+            <textarea
+              name="description"
+              rows="3"
+              class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              placeholder="Descripción de la categoría..."></textarea>
           </div>
 
           <div class="flex gap-3 pt-4">
-            <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all">
+            <button
+              type="button"
+              onclick="document.getElementById('createModal').classList.add('hidden')"
+              class="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
+            >
               Cancelar
             </button>
-            <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
+            <button
+              type="submit"
+              class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
+            >
               Crear Categoría
             </button>
           </div>
