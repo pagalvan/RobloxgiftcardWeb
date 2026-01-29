@@ -31,12 +31,15 @@ if (!giftcard) {
   return Astro.redirect('/tienda');
 }
 
-// Obtener códigos disponibles
+// Obtener códigos disponibles (stock real)
 const { count: availableCodes } = await supabase
   .from('giftcard_codes')
   .select('*', { count: 'exact', head: true })
   .eq('giftcard_id', id)
   .eq('is_sold', false);
+
+const stockReal = availableCodes || 0;
+const hasStock = stockReal > 0;
 
 // Manejar compra
 let purchaseSuccess = false;
@@ -44,57 +47,62 @@ let purchaseError = "";
 let purchasedCode = "";
 
 if (Astro.request.method === "POST" && session) {
-  try {
-    // Obtener un código disponible
-    const { data: code, error: codeError } = await supabase
-      .from('giftcard_codes')
-      .select('*')
-      .eq('giftcard_id', id)
-      .eq('is_sold', false)
-      .limit(1)
-      .single();
-    
-    if (codeError || !code) {
-      purchaseError = "No hay códigos disponibles en este momento";
-    } else {
-      // Crear compra
-      const { data: purchase, error: purchaseErr } = await supabase
-        .from('purchases')
-        .insert({
-          user_id: session.user.id,
-          giftcard_id: id,
-          giftcard_code_id: code.id,
-          amount: giftcard.price,
-          status: 'completed'
-        })
-        .select()
+  // Verificar stock antes de procesar
+  if (!hasStock) {
+    purchaseError = "Lo sentimos, este producto ya no tiene stock disponible";
+  } else {
+    try {
+      // Obtener un código disponible
+      const { data: code, error: codeError } = await supabase
+        .from('giftcard_codes')
+        .select('*')
+        .eq('giftcard_id', id)
+        .eq('is_sold', false)
+        .limit(1)
         .single();
       
-      if (purchaseErr) {
-        purchaseError = "Error al procesar la compra";
+      if (codeError || !code) {
+        purchaseError = "No hay códigos disponibles en este momento";
       } else {
-        // Marcar código como vendido
-        await supabase
-          .from('giftcard_codes')
-          .update({ 
-            is_sold: true, 
-            buyer_id: session.user.id,
-            sold_at: new Date().toISOString()
+        // Crear compra
+        const { data: purchase, error: purchaseErr } = await supabase
+          .from('purchases')
+          .insert({
+            user_id: session.user.id,
+            giftcard_id: id,
+            giftcard_code_id: code.id,
+            amount: giftcard.price,
+            status: 'completed'
           })
-          .eq('id', code.id);
+          .select()
+          .single();
         
-        // Decrementar stock
-        await supabase
-          .from('giftcards')
-          .update({ stock: giftcard.stock - 1 })
-          .eq('id', id);
-        
-        purchaseSuccess = true;
-        purchasedCode = code.code;
+        if (purchaseErr) {
+          purchaseError = "Error al procesar la compra";
+        } else {
+          // Marcar código como vendido
+          await supabase
+            .from('giftcard_codes')
+            .update({ 
+              is_sold: true, 
+              buyer_id: session.user.id,
+              sold_at: new Date().toISOString()
+            })
+            .eq('id', code.id);
+          
+          // Decrementar stock
+          await supabase
+            .from('giftcards')
+            .update({ stock: giftcard.stock - 1 })
+            .eq('id', id);
+          
+          purchaseSuccess = true;
+          purchasedCode = code.code;
+        }
       }
+    } catch (e: any) {
+      purchaseError = e.message || "Error al procesar la compra";
     }
-  } catch (e: any) {
-    purchaseError = e.message || "Error al procesar la compra";
   }
 }
 ---
@@ -211,20 +219,47 @@ if (Astro.request.method === "POST" && session) {
                 {giftcard.description || `Giftcard de ${giftcard.name} con valor de $${giftcard.denomination} ${giftcard.currency}. Código entregado de forma instantánea tras la compra.`}
               </p>
 
-              <!-- Stock Info -->
-              <div class="flex items-center gap-4 mb-8">
+              <!-- Stock Info Mejorado -->
+              <div class="mb-8">
                 <div class:list={[
-                  "flex items-center gap-2 px-4 py-2 rounded-lg",
-                  (availableCodes || 0) > 10 ? "bg-green-500/20 text-green-400" : 
-                  (availableCodes || 0) > 0 ? "bg-yellow-500/20 text-yellow-400" : 
-                  "bg-red-500/20 text-red-400"
+                  "inline-flex items-center gap-3 px-5 py-3 rounded-xl",
+                  hasStock 
+                    ? stockReal > 10 
+                      ? "bg-green-500/10 border border-green-500/30" 
+                      : "bg-amber-500/10 border border-amber-500/30"
+                    : "bg-red-500/10 border border-red-500/30"
                 ]}>
-                  <span class="w-2 h-2 rounded-full bg-current"></span>
-                  <span class="font-medium">
-                    {(availableCodes || 0) > 10 ? "En Stock" : 
-                     (availableCodes || 0) > 0 ? `Solo ${availableCodes} disponibles` : 
-                     "Agotado"}
-                  </span>
+                  <span class:list={[
+                    "w-3 h-3 rounded-full animate-pulse",
+                    hasStock 
+                      ? stockReal > 10 ? "bg-green-500" : "bg-amber-500"
+                      : "bg-red-500"
+                  ]}></span>
+                  <div>
+                    <span class:list={[
+                      "font-semibold block",
+                      hasStock 
+                        ? stockReal > 10 ? "text-green-400" : "text-amber-400"
+                        : "text-red-400"
+                    ]}>
+                      {hasStock 
+                        ? stockReal > 10 
+                          ? "En Stock" 
+                          : `¡Solo quedan ${stockReal}!`
+                        : "Agotado"
+                      }
+                    </span>
+                    {hasStock && (
+                      <span class="text-sm text-gray-500">
+                        {stockReal} {stockReal === 1 ? 'unidad disponible' : 'unidades disponibles'}
+                      </span>
+                    )}
+                    {!hasStock && (
+                      <span class="text-sm text-gray-500">
+                        Este producto no está disponible actualmente
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -236,21 +271,27 @@ if (Astro.request.method === "POST" && session) {
 
               <!-- Botón Comprar -->
               {user ? (
-                (availableCodes || 0) > 0 ? (
+                hasStock ? (
                   <form method="POST">
                     <button 
                       type="submit"
-                      class="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50"
+                      class="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50 flex items-center justify-center gap-3"
                     >
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                      </svg>
                       Comprar Ahora - ${giftcard.price.toFixed(2)}
                     </button>
                   </form>
                 ) : (
                   <button 
                     disabled
-                    class="w-full bg-gray-600 text-gray-400 py-4 rounded-xl font-semibold text-lg cursor-not-allowed"
+                    class="w-full bg-slate-700 text-slate-400 py-4 rounded-xl font-semibold text-lg cursor-not-allowed flex items-center justify-center gap-3 opacity-60"
                   >
-                    Agotado
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    </svg>
+                    Producto Agotado
                   </button>
                 )
               ) : (
