@@ -19,3 +19,21 @@ export function formatDate(date: string | Date): string {
     day: "numeric",
   });
 }
+
+// Formatear precio en COP (Pesos Colombianos)
+export function formatPrice(price: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price);
+}
+
+// Obtener solo el número formateado (sin símbolo)
+export function formatPriceNumber(price: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price);
+}

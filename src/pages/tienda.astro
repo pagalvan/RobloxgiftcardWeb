@@ -6,8 +6,9 @@ import {
   type GiftCardCategory,
   type UserProfile,
 } from "@/lib/supabase";
-import { DollarSign, Inbox } from "lucide-react";
+import { Inbox } from "lucide-react";
 import StoreNavbar from "@/components/StoreNavbar.astro";
+import { formatPrice } from "@/lib/utils";
 
 // Verificar autenticación
 const {
@@ -111,27 +112,9 @@ const pageTitle = searchQuery
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between gap-4">
           <!-- Logo -->
-          <a href="/" class="flex items-center gap-2 shrink-0">
-            <div
-              class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
-            >
-              <svg
-                class="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-            </div>
-            <span class="text-xl font-bold text-white hidden sm:block"
-              >GiftCard Store</span
-            >
+          <a href="/" class="flex items-center shrink-0 logo-container">
+            <img src="/Reload.svg" alt="Reload" class="h-14 w-auto logo-icon" />
+            <img src="/images/ELOAD.png" alt="ELOAD" class="h-7 logo-text" />
           </a>
 
           <!-- Buscador centrado -->
@@ -614,12 +597,12 @@ const pageTitle = searchQuery
                       {/* Precios */}
                       <div class="flex items-baseline gap-2">
                         <span class="text-xl font-bold text-white">
-                          ${card.price.toFixed(2)}
+                          {formatPrice(card.price)}
                         </span>
                         {card.original_price &&
                           card.original_price > card.price && (
                             <span class="text-sm text-gray-500 line-through">
-                              ${card.original_price.toFixed(2)}
+                              {formatPrice(card.original_price)}
                             </span>
                           )}
                       </div>
@@ -884,3 +867,42 @@ const pageTitle = searchQuery
   (window as any).handleSort = handleSort;
   (window as any).toggleSection = toggleSection;
 </script>
+
+<style>
+  .logo-container {
+    position: relative;
+    overflow: hidden;
+    padding-right: 0;
+    transition: padding-right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .logo-container:hover {
+    padding-right: 110px;
+  }
+  
+  .logo-icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .logo-text {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    z-index: 1;
+    transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.3s ease-out;
+  }
+  
+  .logo-container:hover .logo-icon {
+    transform: scale(1.05);
+  }
+  
+  .logo-container:hover .logo-text {
+    left: 60px;
+    opacity: 1;
+  }
+</style>

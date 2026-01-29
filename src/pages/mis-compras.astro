@@ -1,7 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { supabase, type UserProfile, type Purchase } from "@/lib/supabase";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatPrice } from "@/lib/utils";
 import { ShoppingBag } from "lucide-react";
 import StoreNavbar from "@/components/StoreNavbar.astro";
 
@@ -80,7 +80,7 @@ const { data: purchases } = await supabase
 
                     <div class="text-right">
                       <p class="text-lg font-bold text-white">
-                        ${purchase.amount.toFixed(2)}
+                        {formatPrice(purchase.amount)}
                       </p>
                       <span
                         class:list={[

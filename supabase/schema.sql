@@ -61,9 +61,9 @@ CREATE TABLE IF NOT EXISTS public.giftcards (
   category_id UUID REFERENCES public.giftcard_categories(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   description TEXT,
-  price DECIMAL(10,2) NOT NULL,
-  original_price DECIMAL(10,2),
-  currency TEXT DEFAULT 'USD',
+  price DECIMAL(10,0) NOT NULL,
+  original_price DECIMAL(10,0),
+  currency TEXT DEFAULT 'COP',
   denomination DECIMAL(10,2) NOT NULL,
   image_url TEXT,
   stock INTEGER DEFAULT 0,
@@ -285,6 +285,56 @@ RETURNS INTEGER AS $$
   FROM public.giftcard_codes 
   WHERE giftcard_id = giftcard_uuid AND is_sold = false;
 $$ LANGUAGE SQL;
+
+-- Función para actualizar el stock automáticamente cuando se insertan/actualizan códigos
+CREATE OR REPLACE FUNCTION update_giftcard_stock()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Actualizar stock para la giftcard afectada
+  IF TG_OP = 'INSERT' THEN
+    UPDATE public.giftcards 
+    SET stock = (
+      SELECT COUNT(*) FROM public.giftcard_codes 
+      WHERE giftcard_id = NEW.giftcard_id AND is_sold = false
+    )
+    WHERE id = NEW.giftcard_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'UPDATE' THEN
+    -- Actualizar stock de la giftcard anterior y nueva (si cambió)
+    UPDATE public.giftcards 
+    SET stock = (
+      SELECT COUNT(*) FROM public.giftcard_codes 
+      WHERE giftcard_id = NEW.giftcard_id AND is_sold = false
+    )
+    WHERE id = NEW.giftcard_id;
+    
+    IF OLD.giftcard_id != NEW.giftcard_id THEN
+      UPDATE public.giftcards 
+      SET stock = (
+        SELECT COUNT(*) FROM public.giftcard_codes 
+        WHERE giftcard_id = OLD.giftcard_id AND is_sold = false
+      )
+      WHERE id = OLD.giftcard_id;
+    END IF;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE public.giftcards 
+    SET stock = (
+      SELECT COUNT(*) FROM public.giftcard_codes 
+      WHERE giftcard_id = OLD.giftcard_id AND is_sold = false
+    )
+    WHERE id = OLD.giftcard_id;
+    RETURN OLD;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger para actualizar stock automáticamente
+DROP TRIGGER IF EXISTS update_stock_on_code_change ON public.giftcard_codes;
+CREATE TRIGGER update_stock_on_code_change
+  AFTER INSERT OR UPDATE OR DELETE ON public.giftcard_codes
+  FOR EACH ROW EXECUTE FUNCTION update_giftcard_stock();
 
 -- Función para actualizar updated_at automáticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()

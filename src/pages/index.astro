@@ -6,7 +6,6 @@ import {
   type GiftCardCategory,
   type UserProfile,
 } from "@/lib/supabase";
-import { DollarSign, Zap, ShieldCheck } from "lucide-react";
 import StoreNavbar from "@/components/StoreNavbar.astro";
 
 // Verificar autenticación
@@ -85,46 +84,34 @@ const pageTitle = searchQuery
     : "Todos los Productos";
 ---
 
-<Layout title="GiftCard Store - Las mejores giftcards al mejor precio">
+<Layout title="Reload - Las mejores giftcards al mejor precio">
   <div
     class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
   >
-    <!-- Primera sección: Pantalla completa (Header + Hero + Categorías) -->
-    <section class="min-h-screen flex flex-col">
-      <!-- Header -->
-      <header
-        class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10"
+    <!-- Header -->
+    <header
+      class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10"
       >
         <!-- Fila superior: Logo, Buscador, Usuario -->
         <div class="container mx-auto px-4 py-3 md:py-4">
           <div class="flex items-center justify-between gap-4">
-            <!-- Logo -->
-            <a href="/" class="flex items-center gap-2 shrink-0">
-              <div
-                class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
-              >
-                <svg
-                  class="w-6 h-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
-              </div>
-              <span class="text-xl font-bold text-white hidden sm:block"
-                >GiftCard Store</span
-              >
+            <!-- Logo con animación -->
+            <a href="/" class="flex items-center shrink-0 group logo-container">
+              <img
+                src="/Reload.svg"
+                alt="Reload"
+                class="h-14 w-auto logo-icon"
+              />
+              <img
+                src="/images/ELOAD.png"
+                alt="ELOAD"
+                class="h-7 logo-text"
+              />
             </a>
 
             <!-- Buscador centrado -->
             <div class="flex-1 max-w-2xl">
-              <form action="/" method="GET" class="w-full relative">
+              <form action="/tienda" method="GET" class="w-full relative">
                 <input
                   type="text"
                   name="buscar"
@@ -336,6 +323,8 @@ const pageTitle = searchQuery
         </div>
       </header>
 
+    <!-- Primera sección: Pantalla completa (Hero + Categorías) -->
+    <section class="flex flex-col" style="min-height: calc(100vh - 130px);">
       <!-- Hero Banner -->
       <div class="flex-1 flex flex-col">
         <div class="flex-1 relative overflow-hidden">
@@ -377,52 +366,6 @@ const pageTitle = searchQuery
     </section>
 
     <main class="container mx-auto px-4 py-16">
-      <!-- Features -->
-      <div class="grid md:grid-cols-3 gap-8 mb-24">
-        <div
-          class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105"
-        >
-          <div
-            class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
-          >
-            <Zap className="w-7 h-7 text-primary" client:load />
-          </div>
-          <h3 class="text-xl font-bold text-white mb-3">Entrega Instantánea</h3>
-          <p class="text-gray-400">
-            Recibe tu código al momento de la compra. Sin esperas, sin
-            complicaciones.
-          </p>
-        </div>
-
-        <div
-          class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105"
-        >
-          <div
-            class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
-          >
-            <ShieldCheck className="w-7 h-7 text-primary" client:load />
-          </div>
-          <h3 class="text-xl font-bold text-white mb-3">100% Seguro</h3>
-          <p class="text-gray-400">
-            Códigos verificados y protegidos. Tu compra está garantizada.
-          </p>
-        </div>
-
-        <div
-          class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105"
-        >
-          <div
-            class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
-          >
-            <DollarSign className="w-7 h-7 text-primary" client:load />
-          </div>
-          <h3 class="text-xl font-bold text-white mb-3">Mejores Precios</h3>
-          <p class="text-gray-400">
-            Ofertas exclusivas y descuentos en todas nuestras giftcards.
-          </p>
-        </div>
-      </div>
-
       <!-- Products Section Header -->
       <div
         class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
@@ -580,15 +523,14 @@ const pageTitle = searchQuery
           class="flex flex-col md:flex-row items-center justify-between gap-8"
         >
           <div class="flex items-center gap-2">
-            <div
-              class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
-            >
-              <DollarSign className="w-6 h-6 text-white" client:load />
-            </div>
-            <span class="text-xl font-bold text-white">GiftCard Store</span>
+            <img
+              src="/Reload.svg"
+              alt="Reload"
+              class="h-14 w-auto"
+            />
           </div>
           <p class="text-gray-500 text-sm">
-            © 2026 GiftCard Store. Todos los derechos reservados.
+            © 2026 Reload. Todos los derechos reservados.
           </p>
         </div>
       </div>
@@ -642,6 +584,44 @@ const pageTitle = searchQuery
   }
   .category-card:hover img {
     transform: scale(1.15);
+  }
+  
+  /* Animación del logo */
+  .logo-container {
+    position: relative;
+    overflow: hidden;
+    padding-right: 0;
+    transition: padding-right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .logo-container:hover {
+    padding-right: 110px;
+  }
+  
+  .logo-icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .logo-text {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    z-index: 1;
+    transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.3s ease-out;
+  }
+  
+  .logo-container:hover .logo-icon {
+    transform: scale(1.05);
+  }
+  
+  .logo-container:hover .logo-text {
+    left: 60px;
+    opacity: 1;
   }
 </style>
 

@@ -1,6 +1,5 @@
 ---
 import {
-    DollarSign,
     LayoutGrid,
     CreditCard,
     Tag,
@@ -25,12 +24,8 @@ const { activePage, user } = Astro.props;
 >
     <div class="p-6">
         <a href="/" class="flex items-center gap-2">
-            <div
-                class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
-            >
-                <DollarSign className="w-6 h-6 text-white" client:load />
-            </div>
-            <span class="text-lg font-bold text-white">Admin Panel</span>
+            <img src="/Reload.svg" alt="Reload" class="h-10 w-auto" />
+            <span class="text-lg font-bold text-white">Admin</span>
         </a>
     </div>
 
