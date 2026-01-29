@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { supabase, type UserProfile } from "@/lib/supabase";
+import { ChevronLeft, Check } from "lucide-react";
 
 const { id } = Astro.params;
 
@@ -114,9 +115,7 @@ if (Astro.request.method === "POST" && session) {
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
           <a href="/tienda" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
+            <ChevronLeft className="w-5 h-5" client:load />
             Volver a la Tienda
           </a>
           {user ? (
@@ -139,9 +138,7 @@ if (Astro.request.method === "POST" && session) {
         <div class="max-w-2xl mx-auto">
           <div class="bg-green-500/10 border border-green-500/30 rounded-2xl p-8 text-center">
             <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
+              <Check className="w-10 h-10 text-white" client:load />
             </div>
             <h1 class="text-3xl font-bold text-white mb-4">¡Compra Exitosa!</h1>
             <p class="text-gray-400 mb-8">Tu código de {giftcard.name} está listo</p>
@@ -303,24 +300,17 @@ if (Astro.request.method === "POST" && session) {
                 </a>
               )}
 
-              <!-- Info adicional -->
-              <div class="mt-8 space-y-4">
+               <div class="mt-8 space-y-4">
                 <div class="flex items-center gap-3 text-gray-400">
-                  <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 text-green-400" client:load />
                   Entrega instantánea
                 </div>
                 <div class="flex items-center gap-3 text-gray-400">
-                  <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 text-green-400" client:load />
                   Código 100% verificado
                 </div>
                 <div class="flex items-center gap-3 text-gray-400">
-                  <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
+                  <Check className="w-5 h-5 text-green-400" client:load />
                   Soporte 24/7
                 </div>
               </div>

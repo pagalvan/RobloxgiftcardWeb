@@ -1,0 +1,449 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { supabase, type GiftCard, type GiftCardCategory } from "@/lib/supabase";
+
+// Get ID from params
+const { id } = Astro.params;
+
+if (!id) {
+    return Astro.redirect("/admin/giftcards");
+}
+
+// Check auth
+const {
+    data: { session },
+} = await supabase.auth.getSession();
+
+if (!session) {
+    return Astro.redirect("/auth/login");
+}
+
+const { data: user } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+
+if (user?.role !== "admin") {
+    return Astro.redirect("/tienda");
+}
+
+// Handle updates
+let message = "";
+let error = "";
+
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const name = formData.get("name")?.toString();
+    const categoryId = formData.get("category_id")?.toString();
+    const denomination = parseFloat(
+        formData.get("denomination")?.toString() || "0",
+    );
+    const price = parseFloat(formData.get("price")?.toString() || "0");
+    const description = formData.get("description")?.toString();
+    const imageUrl = formData.get("image_url")?.toString();
+    const isActive = formData.get("is_active") === "on";
+
+    const { error: updateError } = await supabase
+        .from("giftcards")
+        .update({
+            name,
+            category_id: categoryId,
+            denomination,
+            price,
+            description,
+            image_url: imageUrl,
+            is_active: isActive,
+        })
+        .eq("id", id);
+
+    if (updateError) {
+        error = updateError.message;
+    } else {
+        return Astro.redirect("/admin/giftcards");
+    }
+}
+
+// Fetch Data
+const { data: giftcard } = await supabase
+    .from("giftcards")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+if (!giftcard) {
+    return Astro.redirect("/admin/giftcards");
+}
+
+const { data: categories } = await supabase
+    .from("giftcard_categories")
+    .select("*")
+    .order("name");
+---
+
+<Layout title={`Editar ${giftcard.name}`}>
+    <div class="min-h-screen bg-slate-900">
+        <!-- Sidebar -->
+        <aside
+            class="fixed left-0 top-0 w-64 h-full bg-slate-800 border-r border-white/10 z-40"
+        >
+            <div class="p-6">
+                <a href="/" class="flex items-center gap-2">
+                    <div
+                        class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+                    >
+                        <svg
+                            class="w-6 h-6 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            ></path>
+                        </svg>
+                    </div>
+                    <span class="text-lg font-bold text-white">Admin Panel</span
+                    >
+                </a>
+            </div>
+
+            <nav class="px-4 space-y-1">
+                <a
+                    href="/admin/dashboard"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                        ></path>
+                    </svg>
+                    Dashboard
+                </a>
+                <a
+                    href="/admin/giftcards"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/20 text-primary"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                        ></path>
+                    </svg>
+                    GiftCards
+                </a>
+                <a
+                    href="/admin/categorias"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                        ></path>
+                    </svg>
+                    Categorías
+                </a>
+                <a
+                    href="/admin/usuarios"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                        ></path>
+                    </svg>
+                    Usuarios
+                </a>
+                <a
+                    href="/admin/ventas"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        ></path>
+                    </svg>
+                    Ventas
+                </a>
+            </nav>
+
+            <div
+                class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10"
+            >
+                <div class="flex items-center gap-3 mb-4">
+                    <div
+                        class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-semibold"
+                    >
+                        {user?.full_name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-white font-medium truncate">
+                            {user?.full_name}
+                        </p>
+                        <p class="text-xs text-gray-400">Administrador</p>
+                    </div>
+                </div>
+                <a
+                    href="/tienda"
+                    class="flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-white/5 rounded-lg text-sm w-full mb-1"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                        ></path>
+                    </svg>
+                    Ver Tienda
+                </a>
+                <a
+                    href="/auth/logout"
+                    class="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg text-sm w-full"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        ></path>
+                    </svg>
+                    Cerrar Sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-64 p-8">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex items-center gap-4 mb-8">
+                    <a
+                        href="/admin/giftcards"
+                        class="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-all"
+                    >
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">
+                            Editar GiftCard
+                        </h1>
+                        <p class="text-gray-400 mt-1">{giftcard.name}</p>
+                    </div>
+                </div>
+
+                {
+                    error && (
+                        <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+                            <p class="text-red-400">{error}</p>
+                        </div>
+                    )
+                }
+
+                <div
+                    class="bg-slate-800/50 rounded-xl border border-white/10 p-8"
+                >
+                    <form method="POST" class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-300 mb-2"
+                                    >Nombre</label
+                                >
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={giftcard.name}
+                                    required
+                                    class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-300 mb-2"
+                                    >Categoría</label
+                                >
+                                <select
+                                    name="category_id"
+                                    required
+                                    class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    {
+                                        categories?.map(
+                                            (cat: GiftCardCategory) => (
+                                                <option
+                                                    value={cat.id}
+                                                    selected={
+                                                        cat.id ===
+                                                        giftcard.category_id
+                                                    }
+                                                >
+                                                    {cat.name}
+                                                </option>
+                                            ),
+                                        )
+                                    }
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-300 mb-2"
+                                    >Valor (USD)</label
+                                >
+                                <input
+                                    type="number"
+                                    name="denomination"
+                                    value={giftcard.denomination}
+                                    required
+                                    min="1"
+                                    step="0.01"
+                                    class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-300 mb-2"
+                                    >Precio Venta</label
+                                >
+                                <input
+                                    type="number"
+                                    name="price"
+                                    value={giftcard.price}
+                                    required
+                                    min="0.01"
+                                    step="0.01"
+                                    class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-300 mb-2"
+                                >URL de Imagen</label
+                            >
+                            <input
+                                type="url"
+                                name="image_url"
+                                value={giftcard.image_url}
+                                class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-300 mb-2"
+                                >Descripción</label
+                            >
+                            <textarea
+                                name="description"
+                                rows="3"
+                                class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                                >{giftcard.description}</textarea
+                            >
+                        </div>
+
+                        <div
+                            class="flex items-center gap-3 p-4 bg-slate-900/50 rounded-lg"
+                        >
+                            <input
+                                type="checkbox"
+                                name="is_active"
+                                id="is_active"
+                                checked={giftcard.is_active}
+                                class="w-5 h-5 rounded border-white/10 bg-slate-800 text-primary focus:ring-primary"
+                            />
+                            <label
+                                for="is_active"
+                                class="text-sm font-medium text-white"
+                                >Producto Activo</label
+                            >
+                        </div>
+
+                        <div class="flex gap-4 pt-4 border-t border-white/10">
+                            <a
+                                href="/admin/giftcards"
+                                class="px-6 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all font-medium"
+                            >
+                                Cancelar
+                            </a>
+                            <button
+                                type="submit"
+                                class="flex-1 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all font-medium"
+                            >
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</Layout>

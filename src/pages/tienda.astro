@@ -6,6 +6,8 @@ import {
   type GiftCardCategory,
   type UserProfile,
 } from "@/lib/supabase";
+import { DollarSign, Inbox } from "lucide-react";
+import StoreNavbar from "@/components/StoreNavbar.astro";
 
 // Verificar autenticación
 const {
@@ -38,9 +40,10 @@ const searchQuery = Astro.url.searchParams.get("buscar") || "";
 let categoryId = categoryFilter;
 if (categoryFilter && categories) {
   // Verificar si es un nombre de categoría en lugar de un ID
-  const foundCategory = categories.find((c: any) => 
-    c.name.toLowerCase() === categoryFilter.toLowerCase() ||
-    c.id === categoryFilter
+  const foundCategory = categories.find(
+    (c: any) =>
+      c.name.toLowerCase() === categoryFilter.toLowerCase() ||
+      c.id === categoryFilter,
   );
   if (foundCategory) {
     categoryId = foundCategory.id;
@@ -89,43 +92,73 @@ const totalProducts = giftcards?.length || 0;
 
 // Obtener nombre de categoría seleccionada
 const selectedCategory = categories?.find((c: any) => c.id === categoryId);
-const pageTitle = searchQuery 
-  ? `Resultados para "${searchQuery}"` 
-  : selectedCategory 
-    ? selectedCategory.name 
+const pageTitle = searchQuery
+  ? `Resultados para "${searchQuery}"`
+  : selectedCategory
+    ? selectedCategory.name
     : "Todos los Productos";
 ---
 
 <Layout title="Tienda">
-  <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+  <div
+    class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
+  >
     <!-- Header -->
-    <header class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10">
+    <header
+      class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10"
+    >
       <!-- Fila superior: Logo, Buscador, Usuario -->
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between gap-4">
           <!-- Logo -->
           <a href="/" class="flex items-center gap-2 shrink-0">
-            <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <div
+              class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+            >
+              <svg
+                class="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
               </svg>
             </div>
-            <span class="text-xl font-bold text-white hidden sm:block">GiftCard Store</span>
+            <span class="text-xl font-bold text-white hidden sm:block"
+              >GiftCard Store</span
+            >
           </a>
 
           <!-- Buscador centrado -->
           <div class="flex-1 max-w-2xl">
             <form action="/tienda" method="GET" class="w-full relative">
-              <input 
-                type="text" 
-                name="buscar" 
-                placeholder="¿Qué estás buscando?" 
-                value={Astro.url.searchParams.get('buscar') || ''}
+              <input
+                type="text"
+                name="buscar"
+                placeholder="¿Qué estás buscando?"
+                value={Astro.url.searchParams.get("buscar") || ""}
                 class="w-full px-4 py-3 pr-12 bg-slate-800 border border-white/10 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
-              <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white p-2 rounded-lg transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              <button
+                type="submit"
+                class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white p-2 rounded-lg transition-all"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
             </form>
@@ -149,18 +182,30 @@ const pageTitle = searchQuery
                     <div class="absolute right-0 top-12 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                       <div class="p-2">
                         {user.role === "admin" && (
-                          <a href="/admin/dashboard" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg">
+                          <a
+                            href="/admin/dashboard"
+                            class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                          >
                             Ir al Panel
                           </a>
                         )}
-                        <a href="/mis-compras" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg">
+                        <a
+                          href="/mis-compras"
+                          class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                        >
                           Mis Compras
                         </a>
-                        <a href="/perfil" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg">
+                        <a
+                          href="/perfil"
+                          class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                        >
                           Mi Perfil
                         </a>
                         <hr class="my-2 border-white/10" />
-                        <a href="/auth/logout" class="block px-4 py-2 text-sm text-red-400 hover:bg-white/5 rounded-lg">
+                        <a
+                          href="/auth/logout"
+                          class="block px-4 py-2 text-sm text-red-400 hover:bg-white/5 rounded-lg"
+                        >
                           Cerrar Sesión
                         </a>
                       </div>
@@ -169,10 +214,16 @@ const pageTitle = searchQuery
                 </div>
               ) : (
                 <div class="flex items-center gap-3">
-                  <a href="/auth/login" class="text-gray-400 hover:text-white transition-colors text-sm hidden sm:block">
+                  <a
+                    href="/auth/login"
+                    class="text-gray-400 hover:text-white transition-colors text-sm hidden sm:block"
+                  >
                     Iniciar Sesión
                   </a>
-                  <a href="/auth/register" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                  <a
+                    href="/auth/register"
+                    class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  >
                     Registrarse
                   </a>
                 </div>
@@ -181,42 +232,107 @@ const pageTitle = searchQuery
           </div>
         </div>
       </div>
-      
+
       <!-- Fila inferior: Navegación de páginas -->
       <div class="border-t border-white/5 bg-slate-900/50">
         <div class="container mx-auto px-4">
-          <nav class="flex items-center gap-1 overflow-x-auto py-2 scrollbar-hide">
-            <a href="/tienda" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-primary/20 text-primary transition-all">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+          <nav
+            class="flex items-center gap-1 overflow-x-auto py-2 scrollbar-hide"
+          >
+            <a
+              href="/tienda"
+              class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-primary/20 text-primary transition-all"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                ></path>
               </svg>
               Tienda
             </a>
-            {user && (
-              <a href="/mis-compras" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                </svg>
-                Mis Compras
-              </a>
-            )}
-            {user?.role === "admin" && (
-              <a href="/admin/dashboard" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                Panel Admin
-              </a>
-            )}
-            {user?.role === "proveedor" && (
-              <a href="/proveedor/dashboard" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                </svg>
-                Panel Proveedor
-              </a>
-            )}
+            {
+              user && (
+                <a
+                  href="/mis-compras"
+                  class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
+                  </svg>
+                  Mis Compras
+                </a>
+              )
+            }
+            {
+              user?.role === "admin" && (
+                <a
+                  href="/admin/dashboard"
+                  class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  Panel Admin
+                </a>
+              )
+            }
+            {
+              user?.role === "proveedor" && (
+                <a
+                  href="/proveedor/dashboard"
+                  class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                    />
+                  </svg>
+                  Panel Proveedor
+                </a>
+              )
+            }
           </nav>
         </div>
       </div>
@@ -228,68 +344,120 @@ const pageTitle = searchQuery
         <aside class="lg:w-72 shrink-0" id="filters-sidebar">
           <div class="sticky top-24 space-y-6">
             <!-- Categorías -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div
+              class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
+            >
               <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-white">Categoría</h3>
-                <button class="text-gray-400 hover:text-white transition-colors" onclick="toggleSection('categories')">
-                  <svg class="w-5 h-5 transition-transform" id="categories-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                <button
+                  class="text-gray-400 hover:text-white transition-colors"
+                  onclick="toggleSection('categories')"
+                >
+                  <svg
+                    class="w-5 h-5 transition-transform"
+                    id="categories-icon"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 15l7-7 7 7"></path>
                   </svg>
                 </button>
               </div>
               <div id="categories-section" class="space-y-1">
-                <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/5 transition-all group">
-                  <input 
-                    type="checkbox" 
+                <label
+                  class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/5 transition-all group"
+                >
+                  <input
+                    type="checkbox"
                     checked={!categoryId}
                     onchange="window.location.href='/tienda'"
                     class="w-5 h-5 rounded border-white/20 text-primary focus:ring-primary cursor-pointer"
                   />
-                  <span class:list={[
-                    "text-sm transition-colors",
-                    !categoryId 
-                      ? "text-white font-medium" 
-                      : "text-gray-400 group-hover:text-white"
-                  ]}>Todos</span>
-                </label>
-                {categories?.map((cat: any) => (
-                  <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/5 transition-all group">
-                    <input 
-                      type="checkbox" 
-                      checked={categoryId === cat.id}
-                      onchange={`window.location.href='/tienda?categoria=${cat.id}'`}
-                      class="w-5 h-5 rounded border-white/20 text-primary focus:ring-primary cursor-pointer"
-                    />
-                    <span class:list={[
+                  <span
+                    class:list={[
                       "text-sm transition-colors",
-                      categoryId === cat.id 
-                        ? "text-white font-medium" 
-                        : "text-gray-400 group-hover:text-white"
-                    ]}>{cat.name}</span>
-                  </label>
-                ))}
+                      !categoryId
+                        ? "text-white font-medium"
+                        : "text-gray-400 group-hover:text-white",
+                    ]}>Todos</span
+                  >
+                </label>
+                {
+                  categories?.map((cat: any) => (
+                    <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/5 transition-all group">
+                      <input
+                        type="checkbox"
+                        checked={categoryId === cat.id}
+                        onchange={`window.location.href='/tienda?categoria=${cat.id}'`}
+                        class="w-5 h-5 rounded border-white/20 text-primary focus:ring-primary cursor-pointer"
+                      />
+                      <span
+                        class:list={[
+                          "text-sm transition-colors",
+                          categoryId === cat.id
+                            ? "text-white font-medium"
+                            : "text-gray-400 group-hover:text-white",
+                        ]}
+                      >
+                        {cat.name}
+                      </span>
+                    </label>
+                  ))
+                }
               </div>
             </div>
 
             <!-- Rango de Precios -->
-            <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <div
+              class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10"
+            >
               <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-white">Precio</h3>
-                <button class="text-gray-400 hover:text-white transition-colors" onclick="toggleSection('price')">
-                  <svg class="w-5 h-5 transition-transform" id="price-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                <button
+                  class="text-gray-400 hover:text-white transition-colors"
+                  onclick="toggleSection('price')"
+                >
+                  <svg
+                    class="w-5 h-5 transition-transform"
+                    id="price-icon"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 15l7-7 7 7"></path>
                   </svg>
                 </button>
               </div>
               <div id="price-section" class="space-y-3">
                 <div class="flex gap-3">
                   <div class="flex-1">
-                    <label class="text-xs text-gray-500 mb-1 block">Mínimo</label>
-                    <input type="number" placeholder="$0" class="w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500" />
+                    <label class="text-xs text-gray-500 mb-1 block"
+                      >Mínimo</label
+                    >
+                    <input
+                      type="number"
+                      placeholder="$0"
+                      class="w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500"
+                    />
                   </div>
                   <div class="flex-1">
-                    <label class="text-xs text-gray-500 mb-1 block">Máximo</label>
-                    <input type="number" placeholder="$500" class="w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500" />
+                    <label class="text-xs text-gray-500 mb-1 block"
+                      >Máximo</label
+                    >
+                    <input
+                      type="number"
+                      placeholder="$500"
+                      class="w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500"
+                    />
                   </div>
                 </div>
               </div>
@@ -300,39 +468,71 @@ const pageTitle = searchQuery
         <!-- Contenido Principal -->
         <div class="flex-1">
           <!-- Header de la sección -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+          >
             <div>
               <h1 class="text-2xl md:text-3xl font-bold text-white">
-                {pageTitle} <span class="text-gray-500 font-normal">({totalProducts})</span>
+                {pageTitle}
+                <span class="text-gray-500 font-normal">({totalProducts})</span>
               </h1>
             </div>
-            
+
             <div class="flex items-center gap-4">
               <!-- Toggle filtros móvil -->
-              <button 
-                id="toggle-filters" 
+              <button
+                id="toggle-filters"
                 class="lg:hidden flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg text-sm text-gray-300 hover:bg-white/20 transition-all"
               >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  ></path>
                 </svg>
                 Filtros
               </button>
 
               <!-- Ordenar -->
               <div class="relative">
-                <select 
+                <select
                   id="sort-select"
                   class="appearance-none bg-white/10 border-0 rounded-lg px-4 py-2 pr-10 text-sm text-gray-300 cursor-pointer hover:bg-white/20 transition-all focus:ring-2 focus:ring-primary"
                   onchange="handleSort(this.value)"
                 >
-                  <option value="nombre" selected={sortBy === "nombre"}>Ordenar por nombre</option>
-                  <option value="precio-asc" selected={sortBy === "precio-asc"}>Precio: menor a mayor</option>
-                  <option value="precio-desc" selected={sortBy === "precio-desc"}>Precio: mayor a menor</option>
-                  <option value="reciente" selected={sortBy === "reciente"}>Más recientes</option>
+                  <option value="nombre" selected={sortBy === "nombre"}
+                    >Ordenar por nombre</option
+                  >
+                  <option value="precio-asc" selected={sortBy === "precio-asc"}
+                    >Precio: menor a mayor</option
+                  >
+                  <option
+                    value="precio-desc"
+                    selected={sortBy === "precio-desc"}
+                    >Precio: mayor a menor</option
+                  >
+                  <option value="reciente" selected={sortBy === "reciente"}
+                    >Más recientes</option
+                  >
                 </select>
-                <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                <svg
+                  class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
             </div>
@@ -363,25 +563,34 @@ const pageTitle = searchQuery
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Badge de descuento */}
-                      {card.original_price && card.original_price > card.price && (
-                        <span class="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
-                          -{Math.round((1 - card.price / card.original_price) * 100)}%
-                        </span>
-                      )}
-                      
+                      {card.original_price &&
+                        card.original_price > card.price && (
+                          <span class="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                            -
+                            {Math.round(
+                              (1 - card.price / card.original_price) * 100,
+                            )}
+                            %
+                          </span>
+                        )}
+
                       {/* Badge de stock */}
-                      <span class:list={[
-                        "absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5",
-                        card.stock > 10 
-                          ? "bg-green-500 text-white" 
-                          : "bg-amber-500 text-white"
-                      ]}>
-                        <span class="w-1.5 h-1.5 rounded-full bg-current opacity-75 animate-pulse"></span>
-                        {card.stock > 10 ? "Disponible" : `${card.stock} disponibles`}
+                      <span
+                        class:list={[
+                          "absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5",
+                          card.stock > 10
+                            ? "bg-green-500 text-white"
+                            : "bg-amber-500 text-white",
+                        ]}
+                      >
+                        <span class="w-1.5 h-1.5 rounded-full bg-current opacity-75 animate-pulse" />
+                        {card.stock > 10
+                          ? "Disponible"
+                          : `${card.stock} disponibles`}
                       </span>
-                      
+
                       {/* Overlay hover */}
                       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-6">
                         <span class="bg-white text-slate-900 px-6 py-2 rounded-full text-sm font-semibold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
@@ -389,29 +598,30 @@ const pageTitle = searchQuery
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* Info del producto */}
                     <div class="p-5">
                       {/* Categoría */}
                       <span class="inline-block text-xs font-medium text-gray-400 bg-white/10 px-2.5 py-1 rounded-full mb-3">
                         {card.category?.name}
                       </span>
-                      
+
                       {/* Nombre */}
                       <h3 class="font-semibold text-white group-hover:text-primary transition-colors mb-2 line-clamp-1">
                         {card.name}
                       </h3>
-                      
+
                       {/* Precios */}
                       <div class="flex items-baseline gap-2">
                         <span class="text-xl font-bold text-white">
                           ${card.price.toFixed(2)}
                         </span>
-                        {card.original_price && card.original_price > card.price && (
-                          <span class="text-sm text-gray-500 line-through">
-                            ${card.original_price.toFixed(2)}
-                          </span>
-                        )}
+                        {card.original_price &&
+                          card.original_price > card.price && (
+                            <span class="text-sm text-gray-500 line-through">
+                              ${card.original_price.toFixed(2)}
+                            </span>
+                          )}
                       </div>
                     </div>
                   </a>
@@ -437,39 +647,71 @@ const pageTitle = searchQuery
                     </svg>
                   </div>
                   <div class="absolute -bottom-2 -right-2 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    <svg
+                      class="w-6 h-6 text-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
                     </svg>
                   </div>
                 </div>
-                
+
                 <h3 class="text-2xl font-bold text-white mb-3 text-center">
                   Lo sentimos, no hay stock disponible
                 </h3>
                 <p class="text-gray-400 text-center max-w-md mb-8 leading-relaxed">
                   En este momento no contamos con productos disponibles
-                  {selectedCategory && ` en la categoría "${selectedCategory.name}"`}. 
-                  Estamos trabajando para reponer nuestro inventario muy pronto.
+                  {selectedCategory &&
+                    ` en la categoría "${selectedCategory.name}"`}
+                  . Estamos trabajando para reponer nuestro inventario muy
+                  pronto.
                 </p>
-                
+
                 <div class="flex flex-col sm:flex-row gap-4">
                   {categoryFilter && (
-                    <a 
-                      href="/tienda" 
+                    <a
+                      href="/tienda"
                       class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium transition-all hover:scale-105 shadow-lg shadow-primary/25"
                     >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                        />
                       </svg>
                       Ver todas las categorías
                     </a>
                   )}
-                  <a 
-                    href="/" 
+                  <a
+                    href="/"
                     class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all hover:scale-105"
                   >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      />
                     </svg>
                     Volver al inicio
                   </a>
@@ -478,13 +720,28 @@ const pageTitle = searchQuery
                 <div class="mt-12 p-6 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 max-w-md">
                   <div class="flex items-start gap-4">
                     <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                      <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                      <svg
+                        class="w-5 h-5 text-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                        />
                       </svg>
                     </div>
                     <div>
-                      <h4 class="font-semibold text-white mb-1">¿Quieres que te avisemos?</h4>
-                      <p class="text-sm text-gray-400">Suscríbete y te notificaremos cuando tengamos nuevos productos disponibles.</p>
+                      <h4 class="font-semibold text-white mb-1">
+                        ¿Quieres que te avisemos?
+                      </h4>
+                      <p class="text-sm text-gray-400">
+                        Suscríbete y te notificaremos cuando tengamos nuevos
+                        productos disponibles.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -503,7 +760,7 @@ const pageTitle = searchQuery
     animation: fadeInUp 0.5s ease-out forwards;
     opacity: 0;
   }
-  
+
   @keyframes fadeInUp {
     from {
       opacity: 0;
@@ -514,17 +771,17 @@ const pageTitle = searchQuery
       transform: translateY(0);
     }
   }
-  
+
   /* Animación suave para hover */
   .product-card:hover {
     transform: translateY(-4px);
   }
-  
+
   /* Mejora de transición para imágenes */
   .product-card img {
     will-change: transform;
   }
-  
+
   /* Línea de truncado */
   .line-clamp-1 {
     display: -webkit-box;
@@ -532,7 +789,7 @@ const pageTitle = searchQuery
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   /* Ocultar scrollbar en nav */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -541,7 +798,7 @@ const pageTitle = searchQuery
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   /* Mobile filters */
   @media (max-width: 1023px) {
     #filters-sidebar {
@@ -558,12 +815,12 @@ const pageTitle = searchQuery
       overflow-y: auto;
       padding: 1.5rem;
     }
-    
+
     #filters-sidebar.open {
       transform: translateX(0);
     }
   }
-  
+
   /* Overlay para móvil */
   .filters-overlay {
     position: fixed;
@@ -574,7 +831,7 @@ const pageTitle = searchQuery
     visibility: hidden;
     transition: all 0.3s ease;
   }
-  
+
   .filters-overlay.open {
     opacity: 1;
     visibility: visible;
@@ -583,44 +840,46 @@ const pageTitle = searchQuery
 
 <script>
   // Toggle filtros móvil
-  const toggleFilters = document.getElementById('toggle-filters');
-  const sidebar = document.getElementById('filters-sidebar');
-  
+  const toggleFilters = document.getElementById("toggle-filters");
+  const sidebar = document.getElementById("filters-sidebar");
+
   if (toggleFilters && sidebar) {
     // Crear overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'filters-overlay';
+    const overlay = document.createElement("div");
+    overlay.className = "filters-overlay";
     document.body.appendChild(overlay);
-    
-    toggleFilters.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('open');
+
+    toggleFilters.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+      overlay.classList.toggle("open");
     });
-    
-    overlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('open');
+
+    overlay.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("open");
     });
   }
-  
+
   // Función para manejar ordenamiento
   function handleSort(value: string) {
     const url = new URL(window.location.href);
-    url.searchParams.set('orden', value);
+    url.searchParams.set("orden", value);
     window.location.href = url.toString();
   }
-  
+
   // Función para toggle de secciones
   function toggleSection(section: string) {
     const content = document.getElementById(`${section}-section`);
     const icon = document.getElementById(`${section}-icon`);
-    
+
     if (content && icon) {
-      content.classList.toggle('hidden');
-      icon.style.transform = content.classList.contains('hidden') ? 'rotate(180deg)' : '';
+      content.classList.toggle("hidden");
+      icon.style.transform = content.classList.contains("hidden")
+        ? "rotate(180deg)"
+        : "";
     }
   }
-  
+
   // Exponer funciones al scope global
   (window as any).handleSort = handleSort;
   (window as any).toggleSection = toggleSection;

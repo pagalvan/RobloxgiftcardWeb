@@ -6,6 +6,8 @@ import {
   type GiftCardCategory,
   type UserProfile,
 } from "@/lib/supabase";
+import { DollarSign, Zap, ShieldCheck } from "lucide-react";
+import StoreNavbar from "@/components/StoreNavbar.astro";
 
 // Verificar autenticación
 const {
@@ -76,46 +78,75 @@ const totalProducts = giftcards?.length || 0;
 
 // Obtener nombre de categoría seleccionada
 const selectedCategory = categories?.find((c: any) => c.id === categoryFilter);
-const pageTitle = searchQuery 
-  ? `Resultados para "${searchQuery}"` 
-  : selectedCategory 
-    ? selectedCategory.name 
+const pageTitle = searchQuery
+  ? `Resultados para "${searchQuery}"`
+  : selectedCategory
+    ? selectedCategory.name
     : "Todos los Productos";
 ---
 
 <Layout title="GiftCard Store - Las mejores giftcards al mejor precio">
-  <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
-    
+  <div
+    class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
+  >
     <!-- Primera sección: Pantalla completa (Header + Hero + Categorías) -->
     <section class="min-h-screen flex flex-col">
       <!-- Header -->
-      <header class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10">
+      <header
+        class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10"
+      >
         <!-- Fila superior: Logo, Buscador, Usuario -->
         <div class="container mx-auto px-4 py-3 md:py-4">
           <div class="flex items-center justify-between gap-4">
             <!-- Logo -->
             <a href="/" class="flex items-center gap-2 shrink-0">
-              <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <div
+                class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+              >
+                <svg
+                  class="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
                 </svg>
               </div>
-              <span class="text-xl font-bold text-white hidden sm:block">GiftCard Store</span>
+              <span class="text-xl font-bold text-white hidden sm:block"
+                >GiftCard Store</span
+              >
             </a>
 
             <!-- Buscador centrado -->
             <div class="flex-1 max-w-2xl">
               <form action="/" method="GET" class="w-full relative">
-                <input 
-                  type="text" 
-                  name="buscar" 
-                  placeholder="¿Qué estás buscando?" 
-                  value={Astro.url.searchParams.get('buscar') || ''}
+                <input
+                  type="text"
+                  name="buscar"
+                  placeholder="¿Qué estás buscando?"
+                  value={Astro.url.searchParams.get("buscar") || ""}
                   class="w-full px-4 py-2.5 md:py-3 pr-12 bg-slate-800 border border-white/10 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                 />
-                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white p-2 rounded-lg transition-all">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                <button
+                  type="submit"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white p-2 rounded-lg transition-all"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                   </svg>
                 </button>
               </form>
@@ -130,7 +161,9 @@ const pageTitle = searchQuery
                       <p class="text-sm text-white font-medium">
                         {user.full_name}
                       </p>
-                      <p class="text-xs text-gray-400 capitalize">{user.role}</p>
+                      <p class="text-xs text-gray-400 capitalize">
+                        {user.role}
+                      </p>
                     </div>
                     <div class="relative group">
                       <button class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-semibold">
@@ -139,23 +172,38 @@ const pageTitle = searchQuery
                       <div class="absolute right-0 top-12 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                         <div class="p-2">
                           {user.role === "admin" && (
-                            <a href="/admin/dashboard" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg">
+                            <a
+                              href="/admin/dashboard"
+                              class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                            >
                               Panel Admin
                             </a>
                           )}
                           {user.role === "proveedor" && (
-                            <a href="/proveedor/dashboard" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg">
+                            <a
+                              href="/proveedor/dashboard"
+                              class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                            >
                               Panel Proveedor
                             </a>
                           )}
-                          <a href="/mis-compras" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg">
+                          <a
+                            href="/mis-compras"
+                            class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                          >
                             Mis Compras
                           </a>
-                          <a href="/perfil" class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg">
+                          <a
+                            href="/perfil"
+                            class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                          >
                             Mi Perfil
                           </a>
                           <hr class="my-2 border-white/10" />
-                          <a href="/auth/logout" class="block px-4 py-2 text-sm text-red-400 hover:bg-white/5 rounded-lg">
+                          <a
+                            href="/auth/logout"
+                            class="block px-4 py-2 text-sm text-red-400 hover:bg-white/5 rounded-lg"
+                          >
                             Cerrar Sesión
                           </a>
                         </div>
@@ -164,10 +212,16 @@ const pageTitle = searchQuery
                   </div>
                 ) : (
                   <div class="flex items-center gap-3">
-                    <a href="/auth/login" class="text-gray-400 hover:text-white transition-colors text-sm hidden sm:block">
+                    <a
+                      href="/auth/login"
+                      class="text-gray-400 hover:text-white transition-colors text-sm hidden sm:block"
+                    >
                       Iniciar Sesión
                     </a>
-                    <a href="/auth/register" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                    <a
+                      href="/auth/register"
+                      class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    >
                       Registrarse
                     </a>
                   </div>
@@ -176,71 +230,145 @@ const pageTitle = searchQuery
             </div>
           </div>
         </div>
-        
+
         <!-- Fila inferior: Navegación de páginas -->
         <div class="border-t border-white/5 bg-slate-900/50">
           <div class="container mx-auto px-4">
-            <nav class="flex items-center gap-1 overflow-x-auto py-2 scrollbar-hide">
-              <a href="/" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-primary/20 text-primary transition-all">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+            <nav
+              class="flex items-center gap-1 overflow-x-auto py-2 scrollbar-hide"
+            >
+              <a
+                href="/"
+                class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-primary/20 text-primary transition-all"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  ></path>
                 </svg>
                 Tienda
               </a>
-              {user && (
-                <a href="/mis-compras" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                  </svg>
-                  Mis Compras
-                </a>
-              )}
-              {user?.role === "admin" && (
-                <a href="/admin/dashboard" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
-                  Panel Admin
-                </a>
-              )}
-              {user?.role === "proveedor" && (
-                <a href="/proveedor/dashboard" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                  </svg>
-                  Panel Proveedor
-                </a>
-              )}
+              {
+                user && (
+                  <a
+                    href="/mis-compras"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                      />
+                    </svg>
+                    Mis Compras
+                  </a>
+                )
+              }
+              {
+                user?.role === "admin" && (
+                  <a
+                    href="/admin/dashboard"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    Panel Admin
+                  </a>
+                )
+              }
+              {
+                user?.role === "proveedor" && (
+                  <a
+                    href="/proveedor/dashboard"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                    Panel Proveedor
+                  </a>
+                )
+              }
             </nav>
           </div>
         </div>
       </header>
 
-      <!-- Hero Banner - Ocupa el espacio restante -->
+      <!-- Hero Banner -->
       <div class="flex-1 flex flex-col">
         <div class="flex-1 relative overflow-hidden">
-          <img 
-            src="/hero-banner.png" 
-            alt="Regalos de Temporada - Descubre las mejores ofertas en tus juegos favoritos" 
+          <img
+            src="/hero-banner.png"
+            alt="Regalos de Temporada - Descubre las mejores ofertas en tus juegos favoritos"
             class="w-full h-full object-cover object-center absolute inset-0"
           />
         </div>
 
         <!-- Categorías / Marcas -->
-        <div class="py-6 md:py-8 bg-gradient-to-b from-slate-950/90 to-slate-950">
+        <div
+          class="py-6 md:py-8 bg-gradient-to-b from-slate-950/90 to-slate-950"
+        >
           <div class="container mx-auto px-4">
             <div class="flex flex-wrap justify-center gap-6 md:gap-10">
-              <!-- Roblox -->
-              <a href="/tienda?categoria=Roblox" class="category-card group flex flex-col items-center gap-2 md:gap-3 p-4 md:p-6 rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 cursor-pointer">
-                <div class="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-xl overflow-hidden group-hover:scale-110 transition-transform duration-300">
-                  <img 
-                    src="/robloxlogo.png" 
-                    alt="Roblox" 
+              <a
+                href="/tienda?categoria=Roblox"
+                class="category-card group flex flex-col items-center gap-2 md:gap-3 p-4 md:p-6 rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300 cursor-pointer"
+              >
+                <div
+                  class="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-xl overflow-hidden group-hover:scale-110 transition-transform duration-300"
+                >
+                  <img
+                    src="/robloxlogo.png"
+                    alt="Roblox"
                     class="w-full h-full object-contain"
                   />
                 </div>
-                <span class="text-xs md:text-sm font-bold text-white tracking-wide group-hover:text-primary transition-colors">ROBLOX</span>
+                <span
+                  class="text-xs md:text-sm font-bold text-white tracking-wide group-hover:text-primary transition-colors"
+                  >ROBLOX</span
+                >
               </a>
             </div>
           </div>
@@ -248,32 +376,97 @@ const pageTitle = searchQuery
       </div>
     </section>
 
-    <!-- Contenido Principal - Solo GiftCards (aparece al hacer scroll) -->
-    <main class="container mx-auto px-4 py-8">
-      <!-- Header de la sección -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <main class="container mx-auto px-4 py-16">
+      <!-- Features -->
+      <div class="grid md:grid-cols-3 gap-8 mb-24">
+        <div
+          class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105"
+        >
+          <div
+            class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
+          >
+            <Zap className="w-7 h-7 text-primary" client:load />
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">Entrega Instantánea</h3>
+          <p class="text-gray-400">
+            Recibe tu código al momento de la compra. Sin esperas, sin
+            complicaciones.
+          </p>
+        </div>
+
+        <div
+          class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105"
+        >
+          <div
+            class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
+          >
+            <ShieldCheck className="w-7 h-7 text-primary" client:load />
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">100% Seguro</h3>
+          <p class="text-gray-400">
+            Códigos verificados y protegidos. Tu compra está garantizada.
+          </p>
+        </div>
+
+        <div
+          class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-primary/50 transition-all hover:scale-105"
+        >
+          <div
+            class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
+          >
+            <DollarSign className="w-7 h-7 text-primary" client:load />
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">Mejores Precios</h3>
+          <p class="text-gray-400">
+            Ofertas exclusivas y descuentos en todas nuestras giftcards.
+          </p>
+        </div>
+      </div>
+
+      <!-- Products Section Header -->
+      <div
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+      >
         <div>
           <h1 class="text-2xl md:text-3xl font-bold text-white">
-            Nuestras GiftCards <span class="text-gray-500 font-normal">({totalProducts})</span>
+            Nuestras GiftCards <span class="text-gray-500 font-normal"
+              >({totalProducts})</span
+            >
           </h1>
-          <p class="text-gray-400 mt-1">Las mejores ofertas en tus juegos favoritos</p>
+          <p class="text-gray-400 mt-1">{pageTitle}</p>
         </div>
-        
+
         <div class="flex items-center gap-4">
-          <!-- Ordenar -->
           <div class="relative">
-            <select 
+            <select
               id="sort-select"
               class="appearance-none bg-white/10 border-0 rounded-lg px-4 py-2 pr-10 text-sm text-gray-300 cursor-pointer hover:bg-white/20 transition-all focus:ring-2 focus:ring-primary"
               onchange="handleSort(this.value)"
             >
-              <option value="nombre" selected={sortBy === "nombre"}>Ordenar por nombre</option>
-              <option value="precio-asc" selected={sortBy === "precio-asc"}>Precio: menor a mayor</option>
-              <option value="precio-desc" selected={sortBy === "precio-desc"}>Precio: mayor a menor</option>
-              <option value="reciente" selected={sortBy === "reciente"}>Más recientes</option>
+              <option value="nombre" selected={sortBy === "nombre"}
+                >Ordenar por nombre</option
+              >
+              <option value="precio-asc" selected={sortBy === "precio-asc"}
+                >Precio: menor a mayor</option
+              >
+              <option value="precio-desc" selected={sortBy === "precio-desc"}
+                >Precio: mayor a menor</option
+              >
+              <option value="reciente" selected={sortBy === "reciente"}
+                >Más recientes</option
+              >
             </select>
-            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            <svg
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"></path>
             </svg>
           </div>
         </div>
@@ -289,7 +482,6 @@ const pageTitle = searchQuery
                 class="product-card group bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10"
                 style={`animation-delay: ${index * 50}ms`}
               >
-                {/* Imagen del producto */}
                 <div class="relative aspect-square bg-gradient-to-br from-slate-800 to-slate-900 overflow-hidden">
                   {card.image_url ? (
                     <img
@@ -304,62 +496,53 @@ const pageTitle = searchQuery
                       </div>
                     </div>
                   )}
-                  
-                  {/* Badge de descuento */}
                   {card.original_price && card.original_price > card.price && (
                     <span class="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
-                      -{Math.round((1 - card.price / card.original_price) * 100)}%
+                      -
+                      {Math.round((1 - card.price / card.original_price) * 100)}
+                      %
                     </span>
                   )}
-                  
-                  {/* Badge de stock */}
-                  <span class:list={[
-                    "absolute top-2 right-2 text-xs font-semibold px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1",
-                    card.stock > 10 
-                      ? "bg-green-500 text-white" 
-                      : "bg-amber-500 text-white"
-                  ]}>
-                    <span class="w-1.5 h-1.5 rounded-full bg-current opacity-75 animate-pulse"></span>
+                  <span
+                    class:list={[
+                      "absolute top-2 right-2 text-xs font-semibold px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1",
+                      card.stock > 10
+                        ? "bg-green-500 text-white"
+                        : "bg-amber-500 text-white",
+                    ]}
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full bg-current opacity-75 animate-pulse" />
                     {card.stock > 10 ? "Stock" : card.stock}
                   </span>
-                  
-                  {/* Overlay hover */}
                   <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
                     <span class="bg-white text-slate-900 px-4 py-1.5 rounded-full text-sm font-semibold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                       Ver detalles
                     </span>
                   </div>
                 </div>
-                
-                {/* Info del producto */}
                 <div class="p-3 md:p-4">
-                  {/* Categoría */}
                   <span class="inline-block text-xs font-medium text-gray-400 bg-white/10 px-2 py-0.5 rounded-full mb-2">
                     {card.category?.name}
                   </span>
-                  
-                  {/* Nombre */}
                   <h3 class="font-semibold text-white text-sm md:text-base group-hover:text-primary transition-colors mb-2 line-clamp-1">
                     {card.name}
                   </h3>
-                  
-                  {/* Precios */}
                   <div class="flex items-baseline gap-2">
                     <span class="text-lg md:text-xl font-bold text-white">
                       ${card.price.toFixed(2)}
                     </span>
-                    {card.original_price && card.original_price > card.price && (
-                      <span class="text-xs md:text-sm text-gray-500 line-through">
-                        ${card.original_price.toFixed(2)}
-                      </span>
-                    )}
+                    {card.original_price &&
+                      card.original_price > card.price && (
+                        <span class="text-xs md:text-sm text-gray-500 line-through">
+                          ${card.original_price.toFixed(2)}
+                        </span>
+                      )}
                   </div>
                 </div>
               </a>
             ))}
           </div>
         ) : (
-          /* Estado vacío */
           <div class="flex flex-col items-center justify-center py-20 px-4">
             <div class="relative mb-8">
               <div class="w-32 h-32 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center">
@@ -378,12 +561,12 @@ const pageTitle = searchQuery
                 </svg>
               </div>
             </div>
-            
             <h3 class="text-2xl font-bold text-white mb-3 text-center">
               Próximamente más productos
             </h3>
             <p class="text-gray-400 text-center max-w-md mb-8 leading-relaxed">
-              Estamos trabajando para traerte las mejores ofertas en giftcards. ¡Vuelve pronto!
+              Estamos trabajando para traerte las mejores ofertas en giftcards.
+              ¡Vuelve pronto!
             </p>
           </div>
         )
@@ -391,18 +574,22 @@ const pageTitle = searchQuery
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-white/10 mt-16">
-      <div class="container mx-auto px-4 py-8">
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+    <footer class="border-t border-white/10 mt-16 bg-slate-950">
+      <div class="container mx-auto px-4 py-12">
+        <div
+          class="flex flex-col md:flex-row items-center justify-between gap-8"
+        >
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+            <div
+              class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+            >
+              <DollarSign className="w-6 h-6 text-white" client:load />
             </div>
-            <span class="text-white font-semibold">GiftCard Store</span>
+            <span class="text-xl font-bold text-white">GiftCard Store</span>
           </div>
-          <p class="text-gray-500 text-sm">© 2026 GiftCard Store. Todos los derechos reservados.</p>
+          <p class="text-gray-500 text-sm">
+            © 2026 GiftCard Store. Todos los derechos reservados.
+          </p>
         </div>
       </div>
     </footer>
@@ -410,12 +597,10 @@ const pageTitle = searchQuery
 </Layout>
 
 <style>
-  /* Animaciones de entrada */
   .product-card {
     animation: fadeInUp 0.5s ease-out forwards;
     opacity: 0;
   }
-  
   @keyframes fadeInUp {
     from {
       opacity: 0;
@@ -426,26 +611,18 @@ const pageTitle = searchQuery
       transform: translateY(0);
     }
   }
-  
-  /* Animación suave para hover */
   .product-card:hover {
     transform: translateY(-4px);
   }
-  
-  /* Mejora de transición para imágenes */
   .product-card img {
     will-change: transform;
   }
-  
-  /* Línea de truncado */
   .line-clamp-1 {
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
-  /* Ocultar scrollbar en nav */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -453,34 +630,26 @@ const pageTitle = searchQuery
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
-  /* Category card hover effect */
   .category-card {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
   .category-card:hover {
     transform: translateY(-8px);
     box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.25);
   }
-  
   .category-card img {
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
   .category-card:hover img {
     transform: scale(1.15);
   }
 </style>
 
 <script>
-  // Función para manejar ordenamiento
   function handleSort(value: string) {
     const url = new URL(window.location.href);
-    url.searchParams.set('orden', value);
+    url.searchParams.set("orden", value);
     window.location.href = url.toString();
   }
-  
-  // Exponer funciones al scope global
   (window as any).handleSort = handleSort;
 </script>

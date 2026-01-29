@@ -1,0 +1,129 @@
+---
+import {
+    DollarSign,
+    LayoutGrid,
+    CreditCard,
+    Tag,
+    Users,
+    BarChart3,
+    Store,
+    LogOut,
+} from "lucide-react";
+
+interface Props {
+    activePage: string;
+    user: {
+        full_name: string;
+    } | null;
+}
+
+const { activePage, user } = Astro.props;
+---
+
+<aside
+    class="fixed left-0 top-0 w-64 h-full bg-slate-800 border-r border-white/10 z-40"
+>
+    <div class="p-6">
+        <a href="/" class="flex items-center gap-2">
+            <div
+                class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+            >
+                <DollarSign className="w-6 h-6 text-white" client:load />
+            </div>
+            <span class="text-lg font-bold text-white">Admin Panel</span>
+        </a>
+    </div>
+
+    <nav class="px-4 space-y-1">
+        <a
+            href="/admin/dashboard"
+            class:list={[
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+                activePage === "dashboard"
+                    ? "bg-primary/20 text-primary"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white",
+            ]}
+        >
+            <LayoutGrid className="w-5 h-5" client:load />
+            Dashboard
+        </a>
+        <a
+            href="/admin/giftcards"
+            class:list={[
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+                activePage === "giftcards"
+                    ? "bg-primary/20 text-primary"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white",
+            ]}
+        >
+            <CreditCard className="w-5 h-5" client:load />
+            GiftCards
+        </a>
+        <a
+            href="/admin/categorias"
+            class:list={[
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+                activePage === "categorias"
+                    ? "bg-primary/20 text-primary"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white",
+            ]}
+        >
+            <Tag className="w-5 h-5" client:load />
+            Categorías
+        </a>
+        <a
+            href="/admin/usuarios"
+            class:list={[
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+                activePage === "usuarios"
+                    ? "bg-primary/20 text-primary"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white",
+            ]}
+        >
+            <Users className="w-5 h-5" client:load />
+            Usuarios
+        </a>
+        <a
+            href="/admin/ventas"
+            class:list={[
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+                activePage === "ventas"
+                    ? "bg-primary/20 text-primary"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white",
+            ]}
+        >
+            <BarChart3 className="w-5 h-5" client:load />
+            Ventas
+        </a>
+    </nav>
+
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+        <div class="flex items-center gap-3 mb-4">
+            <div
+                class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-semibold"
+            >
+                {user?.full_name?.charAt(0).toUpperCase()}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-white font-medium truncate">
+                    {user?.full_name}
+                </p>
+                <p class="text-xs text-gray-400">Administrador</p>
+            </div>
+        </div>
+        <a
+            href="/tienda"
+            class="flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-white/5 rounded-lg text-sm w-full mb-1"
+        >
+            <Store className="w-4 h-4" client:load />
+            Ver Tienda
+        </a>
+        <a
+            href="/auth/logout"
+            class="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg text-sm w-full"
+        >
+            <LogOut className="w-4 h-4" client:load />
+            Cerrar Sesión
+        </a>
+    </div>
+</aside>
