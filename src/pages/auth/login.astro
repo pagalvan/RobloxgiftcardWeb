@@ -1,11 +1,14 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { supabase } from "@/lib/supabase";
+import { DollarSign } from "lucide-react";
 
 // Verificar si el usuario ya está autenticado
-const { data: { session } } = await supabase.auth.getSession();
+const {
+  data: { session },
+} = await supabase.auth.getSession();
 if (session) {
-  return Astro.redirect('/tienda');
+  return Astro.redirect("/tienda");
 }
 
 // Manejar el login
@@ -17,30 +20,33 @@ if (Astro.request.method === "POST") {
     const email = formData.get("email")?.toString() || "";
     const password = formData.get("password")?.toString() || "";
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error: signInError } = await supabase.auth.signInWithPassword(
+      {
+        email,
+        password,
+      },
+    );
 
     if (signInError) {
-      error = signInError.message === "Invalid login credentials" 
-        ? "Credenciales inválidas" 
-        : signInError.message;
+      error =
+        signInError.message === "Invalid login credentials"
+          ? "Credenciales inválidas"
+          : signInError.message;
     } else if (data.session) {
       // Obtener rol del usuario
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
         .single();
-      
+
       // Redirigir según el rol
-      if (profile?.role === 'admin') {
-        return Astro.redirect('/admin/dashboard');
-      } else if (profile?.role === 'proveedor') {
-        return Astro.redirect('/proveedor/dashboard');
+      if (profile?.role === "admin") {
+        return Astro.redirect("/admin/dashboard");
+      } else if (profile?.role === "proveedor") {
+        return Astro.redirect("/proveedor/dashboard");
       } else {
-        return Astro.redirect('/tienda');
+        return Astro.redirect("/tienda");
       }
     }
   } catch (e: any) {
@@ -50,34 +56,47 @@ if (Astro.request.method === "POST") {
 ---
 
 <Layout title="Iniciar Sesión">
-  <div class="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 flex items-center justify-center p-4">
+  <div
+    class="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 flex items-center justify-center p-4"
+  >
     <div class="w-full max-w-md">
       <!-- Logo -->
       <div class="text-center mb-8">
         <a href="/" class="inline-flex items-center gap-2">
-          <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
+          <div
+            class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center"
+          >
+            <DollarSign className="w-7 h-7 text-white" client:load />
           </div>
           <span class="text-2xl font-bold text-white">GiftCard Store</span>
         </a>
       </div>
 
       <!-- Card -->
-      <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl">
-        <h1 class="text-2xl font-bold text-white text-center mb-2">Bienvenido de Vuelta</h1>
-        <p class="text-gray-400 text-center mb-8">Ingresa tus credenciales para continuar</p>
+      <div
+        class="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl"
+      >
+        <h1 class="text-2xl font-bold text-white text-center mb-2">
+          Bienvenido de Vuelta
+        </h1>
+        <p class="text-gray-400 text-center mb-8">
+          Ingresa tus credenciales para continuar
+        </p>
 
         <form method="POST" class="space-y-5">
-          {error && (
-            <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
-              <p class="text-red-400 text-sm text-center">{error}</p>
-            </div>
-          )}
+          {
+            error && (
+              <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+                <p class="text-red-400 text-sm text-center">{error}</p>
+              </div>
+            )
+          }
 
           <div>
-            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              for="email"
+              class="block text-sm font-medium text-gray-300 mb-2"
+            >
               Correo Electrónico
             </label>
             <input
@@ -91,7 +110,10 @@ if (Astro.request.method === "POST") {
           </div>
 
           <div>
-            <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              for="password"
+              class="block text-sm font-medium text-gray-300 mb-2"
+            >
               Contraseña
             </label>
             <input
@@ -112,7 +134,10 @@ if (Astro.request.method === "POST") {
               />
               <span class="text-sm text-gray-400">Recordarme</span>
             </label>
-            <a href="/auth/forgot-password" class="text-sm text-primary hover:underline">
+            <a
+              href="/auth/forgot-password"
+              class="text-sm text-primary hover:underline"
+            >
               ¿Olvidaste tu contraseña?
             </a>
           </div>
@@ -128,7 +153,10 @@ if (Astro.request.method === "POST") {
         <div class="mt-6 text-center">
           <p class="text-gray-400 text-sm">
             ¿No tienes cuenta?{" "}
-            <a href="/auth/register" class="text-primary hover:underline font-medium">
+            <a
+              href="/auth/register"
+              class="text-primary hover:underline font-medium"
+            >
               Regístrate gratis
             </a>
           </p>
@@ -136,7 +164,9 @@ if (Astro.request.method === "POST") {
       </div>
 
       <!-- Demo Credentials Info -->
-      <div class="mt-6 bg-white/5 backdrop-blur rounded-lg p-4 border border-white/10">
+      <div
+        class="mt-6 bg-white/5 backdrop-blur rounded-lg p-4 border border-white/10"
+      >
         <p class="text-gray-400 text-xs text-center">
           🔐 Sistema seguro con autenticación de Supabase
         </p>

@@ -1,6 +1,9 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { supabase, type GiftCardCategory } from "@/lib/supabase";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import AdminSidebar from "@/components/AdminSidebar.astro";
 
 // Verificar autenticación y rol de admin
 const {
@@ -38,6 +41,7 @@ if (Astro.request.method === "POST") {
     const price = parseFloat(formData.get("price")?.toString() || "0");
     const description = formData.get("description")?.toString() || "";
     const imageUrl = formData.get("image_url")?.toString() || "";
+    const isActive = formData.get("is_active") === "on";
 
     const { error: createError } = await supabase.from("giftcards").insert({
       name,
@@ -48,7 +52,7 @@ if (Astro.request.method === "POST") {
       image_url: imageUrl,
       currency: "USD",
       stock: 0,
-      is_active: true,
+      is_active: isActive,
     });
 
     if (createError) {
@@ -78,6 +82,36 @@ if (Astro.request.method === "POST") {
       .eq("id", id);
 
     message = "Estado actualizado";
+  } else if (action === "update") {
+    const id = formData.get("id")?.toString();
+    const name = formData.get("name")?.toString();
+    const categoryId = formData.get("category_id")?.toString();
+    const denomination = parseFloat(
+      formData.get("denomination")?.toString() || "0",
+    );
+    const price = parseFloat(formData.get("price")?.toString() || "0");
+    const description = formData.get("description")?.toString();
+    const imageUrl = formData.get("image_url")?.toString();
+    const isActive = formData.get("is_active") === "on";
+
+    const { error: updateError } = await supabase
+      .from("giftcards")
+      .update({
+        name,
+        category_id: categoryId,
+        denomination,
+        price,
+        description,
+        image_url: imageUrl,
+        is_active: isActive,
+      })
+      .eq("id", id);
+
+    if (updateError) {
+      error = updateError.message;
+    } else {
+      message = "GiftCard actualizada exitosamente";
+    }
   }
 }
 
@@ -101,173 +135,7 @@ const { data: giftcards } = await supabase
 
 <Layout title="Gestionar GiftCards">
   <div class="min-h-screen bg-slate-900">
-    <!-- Sidebar (mismo que dashboard) -->
-    <aside
-      class="fixed left-0 top-0 w-64 h-full bg-slate-800 border-r border-white/10 z-40"
-    >
-      <div class="p-6">
-        <a href="/" class="flex items-center gap-2">
-          <div
-            class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
-          >
-            <svg
-              class="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-          </div>
-          <span class="text-lg font-bold text-white">Admin Panel</span>
-        </a>
-      </div>
-
-      <nav class="px-4 space-y-1">
-        <a
-          href="/admin/dashboard"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-            ></path>
-          </svg>
-          Dashboard
-        </a>
-        <a
-          href="/admin/giftcards"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/20 text-primary"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-            ></path>
-          </svg>
-          GiftCards
-        </a>
-        <a
-          href="/admin/categorias"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-            ></path>
-          </svg>
-          Categorías
-        </a>
-        <a
-          href="/admin/usuarios"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-            ></path>
-          </svg>
-          Usuarios
-        </a>
-        <a
-          href="/admin/ventas"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-            ></path>
-          </svg>
-          Ventas
-        </a>
-      </nav>
-
-      <div
-        class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10"
-      >
-        <a
-          href="/tienda"
-          class="flex items-center gap-2 px-4 py-2 text-gray-400 hover:bg-white/5 rounded-lg text-sm w-full mb-1"
-        >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-          </svg>
-          Ver Tienda
-        </a>
-        <a
-          href="/auth/logout"
-          class="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg text-sm w-full"
-        >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-            ></path>
-          </svg>
-          Cerrar Sesión
-        </a>
-      </div>
-    </aside>
+    <AdminSidebar activePage="giftcards" user={user} />
 
     <!-- Main Content -->
     <main class="ml-64 p-8">
@@ -280,18 +148,7 @@ const { data: giftcards } = await supabase
           onclick="document.getElementById('createModal').classList.remove('hidden')"
           class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2"
         >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
+          <Plus className="w-5 h-5" client:load />
           Nueva GiftCard
         </button>
       </div>
@@ -393,8 +250,8 @@ const { data: giftcards } = await supabase
                         {card.stock}
                       </span>
                     </td>
-                    <td class="px-6 py-4">
-                      <form method="POST" class="inline">
+                    <td class="px-6 py-4 text-center">
+                      <form method="POST" class="inline-flex items-center">
                         <input type="hidden" name="action" value="toggle" />
                         <input type="hidden" name="id" value={card.id} />
                         <input
@@ -402,65 +259,29 @@ const { data: giftcards } = await supabase
                           name="is_active"
                           value={card.is_active.toString()}
                         />
-                        <button
+                        <Switch
+                          checked={card.is_active}
                           type="submit"
-                          class:list={[
-                            "px-3 py-1 rounded-full text-xs font-medium transition-all",
-                            card.is_active
-                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
-                              : "bg-red-500/20 text-red-400 hover:bg-red-500/30",
-                          ]}
-                        >
-                          {card.is_active ? "Activo" : "Inactivo"}
-                        </button>
+                          className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-slate-700"
+                          client:load
+                        />
                       </form>
                     </td>
                     <td class="px-6 py-4 text-right">
                       <div class="flex items-center justify-end gap-2">
-                        <a
-                          href={`/admin/giftcards/${card.id}`}
+                        <button
+                          onclick={`openEditModal(${JSON.stringify(card)})`}
                           class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
                         >
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                            />
-                          </svg>
-                        </a>
-                        <form
-                          method="POST"
-                          class="inline"
-                          onsubmit="return confirm('¿Estás seguro de eliminar esta giftcard?')"
+                          <Pencil className="w-4 h-4" client:load />
+                        </button>
+                        <button
+                          type="button"
+                          onclick={`openDeleteModal('${card.id}')`}
+                          class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
                         >
-                          <input type="hidden" name="action" value="delete" />
-                          <input type="hidden" name="id" value={card.id} />
-                          <button
-                            type="submit"
-                            class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
-                          >
-                            <svg
-                              class="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        </form>
+                          <Trash2 className="w-4 h-4" client:load />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -481,122 +302,406 @@ const { data: giftcards } = await supabase
   </div>
 
   <!-- Modal Crear -->
-  <div id="createModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-    <div class="flex min-h-screen items-center justify-center p-4">
-      <div
-        class="fixed inset-0 bg-black/70"
-        onclick="document.getElementById('createModal').classList.add('hidden')"
-      >
-      </div>
-      <div
-        class="relative bg-slate-800 rounded-xl w-full max-w-md p-6 border border-white/10"
-      >
-        <h2 class="text-xl font-bold text-white mb-6">Nueva GiftCard</h2>
-        <form method="POST" class="space-y-4">
-          <input type="hidden" name="action" value="create" />
+</Layout>
 
+<script>
+  // Funciones para el modal de edición
+  (window as any).openEditModal = (data: any) => {
+    const modal = document.getElementById("editModal");
+
+    // Set form action inputs
+    (document.getElementById("edit_id") as HTMLInputElement).value = data.id;
+    (document.getElementById("edit_name") as HTMLInputElement).value =
+      data.name;
+    (document.getElementById("edit_category_id") as HTMLSelectElement).value =
+      data.category_id;
+    (document.getElementById("edit_denomination") as HTMLInputElement).value =
+      data.denomination;
+    (document.getElementById("edit_price") as HTMLInputElement).value =
+      data.price;
+    (document.getElementById("edit_image_url") as HTMLInputElement).value =
+      data.image_url || "";
+    (document.getElementById("edit_description") as HTMLTextAreaElement).value =
+      data.description || "";
+    (document.getElementById("edit_is_active") as HTMLInputElement).checked =
+      data.is_active;
+
+    // Sync shadcn Switch state visually
+    const switchBtn = document.getElementById("edit_is_active_switch");
+    if (switchBtn) {
+      switchBtn.setAttribute(
+        "data-state",
+        data.is_active ? "checked" : "unchecked",
+      );
+      const thumb = switchBtn.querySelector("span");
+      if (thumb) {
+        thumb.setAttribute(
+          "data-state",
+          data.is_active ? "checked" : "unchecked",
+        );
+      }
+    }
+
+    modal?.classList.remove("hidden");
+  };
+
+  (window as any).closeEditModal = () => {
+    document.getElementById("editModal")?.classList.add("hidden");
+  };
+
+  // Funciones para el modal de eliminar
+  (window as any).openDeleteModal = (id: string) => {
+    const modal = document.getElementById("deleteModal");
+    (document.getElementById("delete_id") as HTMLInputElement).value = id;
+    modal?.classList.remove("hidden");
+  };
+
+  (window as any).closeDeleteModal = () => {
+    document.getElementById("deleteModal")?.classList.add("hidden");
+  };
+</script>
+
+<!-- Modal Crear -->
+<div id="createModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div
+      class="fixed inset-0 bg-black/70"
+      onclick="document.getElementById('createModal').classList.add('hidden')"
+    >
+    </div>
+    <div
+      class="relative bg-slate-800 rounded-xl w-full max-w-md p-6 border border-white/10"
+    >
+      <h2 class="text-xl font-bold text-white mb-6">Nueva GiftCard</h2>
+      <form method="POST" class="space-y-4">
+        <input type="hidden" name="action" value="create" />
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >Nombre</label
+          >
+          <input
+            type="text"
+            name="name"
+            required
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Ej: Roblox Gift Card"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >Categoría</label
+          >
+          <select
+            name="category_id"
+            required
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Seleccionar...</option>
+            {
+              categories?.map((cat: GiftCardCategory) => (
+                <option value={cat.id}>{cat.name}</option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2"
-              >Nombre</label
+              >Valor (USD)</label
             >
             <input
-              type="text"
-              name="name"
+              type="number"
+              name="denomination"
               required
+              min="1"
+              step="0.01"
               class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Ej: Roblox Gift Card"
+              placeholder="10"
             />
           </div>
-
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2"
-              >Categoría</label
-            >
-            <select
-              name="category_id"
-              required
-              class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Seleccionar...</option>
-              {
-                categories?.map((cat: GiftCardCategory) => (
-                  <option value={cat.id}>{cat.name}</option>
-                ))
-              }
-            </select>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2"
-                >Valor (USD)</label
-              >
-              <input
-                type="number"
-                name="denomination"
-                required
-                min="1"
-                step="0.01"
-                class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="10"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2"
-                >Precio Venta</label
-              >
-              <input
-                type="number"
-                name="price"
-                required
-                min="0.01"
-                step="0.01"
-                class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="9.99"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2"
-              >URL de Imagen</label
+              >Precio Venta</label
             >
             <input
-              type="url"
-              name="image_url"
+              type="number"
+              name="price"
+              required
+              min="0.01"
+              step="0.01"
               class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="https://..."
+              placeholder="9.99"
             />
           </div>
+        </div>
 
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >URL de Imagen</label
+          >
+          <input
+            type="url"
+            name="image_url"
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="https://..."
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >Descripción</label
+          >
+          <textarea
+            name="description"
+            rows="3"
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            placeholder="Descripción del producto..."></textarea>
+        </div>
+
+        <div
+          class="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 group hover:border-primary/50 transition-all"
+        >
+          <div>
+            <label class="text-sm font-semibold text-white block"
+              >Producto Activo</label
+            >
+            <p class="text-xs text-gray-400">
+              ¿Mostrar este producto en la tienda?
+            </p>
+          </div>
+          <Switch
+            id="create_is_active_switch"
+            checked={true}
+            onCheckedChange={(checked: boolean) => {
+              const input = document.getElementById(
+                "create_is_active",
+              ) as HTMLInputElement;
+              if (input) input.checked = checked;
+            }}
+            className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-slate-700"
+            client:load
+          />
+          <input
+            type="checkbox"
+            name="is_active"
+            id="create_is_active"
+            class="hidden"
+            checked
+          />
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button
+            type="button"
+            onclick="document.getElementById('createModal').classList.add('hidden')"
+            class="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
+          >
+            Crear GiftCard
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar -->
+<div id="editModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div class="fixed inset-0 bg-black/70" onclick="window.closeEditModal()">
+    </div>
+    <div
+      class="relative bg-slate-800 rounded-xl w-full max-w-md p-6 border border-white/10"
+    >
+      <h2 class="text-xl font-bold text-white mb-6">Editar GiftCard</h2>
+      <form method="POST" id="editForm" class="space-y-4">
+        <input type="hidden" name="action" value="update" />
+        <input type="hidden" name="id" id="edit_id" />
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >Nombre</label
+          >
+          <input
+            type="text"
+            name="name"
+            id="edit_name"
+            required
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >Categoría</label
+          >
+          <select
+            name="category_id"
+            id="edit_category_id"
+            required
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Seleccionar...</option>
+            {
+              categories?.map((cat: GiftCardCategory) => (
+                <option value={cat.id}>{cat.name}</option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2"
-              >Descripción</label
+              >Valor (USD)</label
             >
-            <textarea
-              name="description"
-              rows="3"
-              class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-              placeholder="Descripción del producto..."></textarea>
+            <input
+              type="number"
+              name="denomination"
+              id="edit_denomination"
+              required
+              min="1"
+              step="0.01"
+              class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2"
+              >Precio Venta</label
+            >
+            <input
+              type="number"
+              name="price"
+              id="edit_price"
+              required
+              min="0.01"
+              step="0.01"
+              class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
 
-          <div class="flex gap-3 pt-4">
-            <button
-              type="button"
-              onclick="document.getElementById('createModal').classList.add('hidden')"
-              class="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >URL de Imagen</label
+          >
+          <input
+            type="url"
+            name="image_url"
+            id="edit_image_url"
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2"
+            >Descripción</label
+          >
+          <textarea
+            name="description"
+            id="edit_description"
+            rows="3"
+            class="w-full px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          ></textarea>
+        </div>
+
+        <div
+          class="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-white/5 group hover:border-primary/50 transition-all"
+        >
+          <div>
+            <label class="text-sm font-semibold text-white block"
+              >Producto Activo</label
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
-            >
-              Crear GiftCard
-            </button>
+            <p class="text-xs text-gray-400">
+              ¿Mostrar este producto en la tienda?
+            </p>
           </div>
+          <Switch
+            id="edit_is_active_switch"
+            onCheckedChange={(checked: boolean) => {
+              const input = document.getElementById(
+                "edit_is_active",
+              ) as HTMLInputElement;
+              if (input) input.checked = checked;
+            }}
+            className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-slate-700"
+            client:load
+          />
+          <input
+            type="checkbox"
+            name="is_active"
+            id="edit_is_active"
+            class="hidden"
+          />
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button
+            type="button"
+            onclick="window.closeEditModal()"
+            class="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all"
+          >
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div id="deleteModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex min-h-screen items-center justify-center p-4">
+    <div class="fixed inset-0 bg-black/70" onclick="window.closeDeleteModal()">
+    </div>
+    <div
+      class="relative bg-slate-800 rounded-xl w-full max-w-sm p-6 border border-white/10"
+    >
+      <div class="text-center">
+        <div
+          class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <Trash2 className="w-8 h-8 text-red-500" client:load />
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">¿Eliminar GiftCard?</h3>
+        <p class="text-gray-400 mb-6">
+          Esta acción no se puede deshacer. ¿Estás seguro de que quieres
+          continuar?
+        </p>
+
+        <form method="POST" class="space-y-3">
+          <input type="hidden" name="action" value="delete" />
+          <input type="hidden" name="id" id="delete_id" />
+
+          <button
+            type="submit"
+            class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-medium"
+          >
+            Sí, eliminar
+          </button>
+          <button
+            type="button"
+            onclick="window.closeDeleteModal()"
+            class="w-full px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all"
+          >
+            Cancelar
+          </button>
         </form>
       </div>
     </div>
   </div>
-</Layout>
+</div>

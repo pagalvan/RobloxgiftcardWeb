@@ -1,6 +1,8 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { supabase } from "@/lib/supabase";
+import { DollarSign, Zap, ShieldCheck } from "lucide-react";
+import StoreNavbar from "@/components/StoreNavbar.astro";
 
 // Verificar si el usuario ya está autenticado
 const {
@@ -29,45 +31,7 @@ if (session) {
   <div
     class="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900"
   >
-    <!-- Hero Section -->
-    <header class="container mx-auto px-4 py-6">
-      <nav class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div
-            class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
-          >
-            <svg
-              class="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
-          </div>
-          <span class="text-2xl font-bold text-white">GiftCard Store</span>
-        </div>
-        <div class="flex items-center gap-4">
-          <a
-            href="/auth/login"
-            class="text-white hover:text-primary transition-colors font-medium"
-          >
-            Iniciar Sesión
-          </a>
-          <a
-            href="/auth/register"
-            class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-all hover:scale-105"
-          >
-            Registrarse
-          </a>
-        </div>
-      </nav>
-    </header>
+    <StoreNavbar user={null} />
 
     <main class="container mx-auto px-4 py-20">
       <div class="text-center max-w-4xl mx-auto">
@@ -119,18 +83,7 @@ if (session) {
           <div
             class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
           >
-            <svg
-              class="w-7 h-7 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
+            <Zap className="w-7 h-7 text-primary" client:load />
           </div>
           <h3 class="text-xl font-bold text-white mb-3">Entrega Instantánea</h3>
           <p class="text-gray-400">
@@ -145,19 +98,7 @@ if (session) {
           <div
             class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
           >
-            <svg
-              class="w-7 h-7 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              ></path>
-            </svg>
+            <ShieldCheck className="w-7 h-7 text-primary" client:load />
           </div>
           <h3 class="text-xl font-bold text-white mb-3">100% Seguro</h3>
           <p class="text-gray-400">
@@ -171,19 +112,7 @@ if (session) {
           <div
             class="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center mb-6"
           >
-            <svg
-              class="w-7 h-7 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
+            <DollarSign className="w-7 h-7 text-primary" client:load />
           </div>
           <h3 class="text-xl font-bold text-white mb-3">Mejores Precios</h3>
           <p class="text-gray-400">
@@ -252,19 +181,7 @@ if (session) {
           <div
             class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center"
           >
-            <svg
-              class="w-4 h-4 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              ></path>
-            </svg>
+            <DollarSign className="w-4 h-4 text-white" client:load />
           </div>
           <span class="text-lg font-bold text-white">GiftCard Store</span>
         </div>
