@@ -173,3 +173,29 @@ input[type="checkbox"]:focus {
 .animate-slide-up {
   animation: slideUp 0.4s ease-out forwards;
 }
+
+/* Custom Select Dropdown Styling */
+select {
+  background-image: none;
+}
+
+select option {
+  padding: 12px 16px;
+  background-color: white;
+  color: #334155;
+  border-radius: 0;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Para navegadores que soportan ::backdrop en select */
+@supports (-webkit-appearance: none) {
+  select {
+    -webkit-appearance: none;
+  }
+}

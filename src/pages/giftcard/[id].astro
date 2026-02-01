@@ -3,6 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import { supabase, type UserProfile } from "@/lib/supabase";
 import { ChevronLeft, Check } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import StoreNavbar from "@/components/StoreNavbar.astro";
 
 const { id } = Astro.params;
 
@@ -47,6 +48,7 @@ const hasStock = stockReal > 0;
 let purchaseSuccess = false;
 let purchaseError = "";
 let purchasedCode = "";
+let purchaseId = "";
 
 if (Astro.request.method === "POST" && session) {
   // Verificar stock antes de procesar
@@ -74,7 +76,8 @@ if (Astro.request.method === "POST" && session) {
             giftcard_id: id,
             giftcard_code_id: code.id,
             amount: giftcard.price,
-            status: 'completed'
+            status: 'completed',
+            is_code_revealed: false
           })
           .select()
           .single();
@@ -100,6 +103,7 @@ if (Astro.request.method === "POST" && session) {
           
           purchaseSuccess = true;
           purchasedCode = code.code;
+          purchaseId = purchase.id;
         }
       }
     } catch (e: any) {
@@ -110,30 +114,8 @@ if (Astro.request.method === "POST" && session) {
 ---
 
 <Layout title={giftcard.name}>
-  <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-    <!-- Header -->
-    <header class="bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
-      <div class="container mx-auto px-4 py-4">
-        <div class="flex items-center justify-between">
-          <a href="/tienda" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <ChevronLeft className="w-5 h-5" client:load />
-            Volver a la Tienda
-          </a>
-          <div class="flex items-center gap-4">
-            {user ? (
-              <div class="flex items-center gap-3">
-                <span class="text-sm text-gray-400 hidden sm:block">Hola, {user.full_name}</span>
-                <a href="/auth/logout" class="text-red-400 hover:text-red-300 text-sm">Salir</a>
-              </div>
-            ) : (
-              <a href="/auth/login" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                Iniciar Sesión
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-    </header>
+  <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <StoreNavbar user={user as any} />
 
     <main class="container mx-auto px-4 py-12">
       {purchaseSuccess ? (
@@ -146,18 +128,75 @@ if (Astro.request.method === "POST" && session) {
             <h1 class="text-3xl font-bold text-white mb-4">¡Compra Exitosa!</h1>
             <p class="text-gray-400 mb-8">Tu código de {giftcard.name} está listo</p>
             
+            <!-- Scratch Card Container -->
             <div class="bg-slate-800 rounded-xl p-6 mb-6">
-              <p class="text-sm text-gray-400 mb-2">Tu Código:</p>
-              <div class="flex items-center justify-center gap-4">
-                <code id="giftcode" class="text-2xl font-mono font-bold text-primary tracking-wider">
-                  {purchasedCode}
-                </code>
+              <p class="text-sm text-gray-400 mb-4">Tu Código:</p>
+              
+              <!-- Hidden data -->
+              <input type="hidden" id="hidden-code" value={purchasedCode} />
+              <input type="hidden" id="purchase-id" value={purchaseId} />
+              <input type="hidden" id="user-id" value={session?.user.id || ''} />
+              
+              <!-- Scratch Card (antes de revelar) -->
+              <div id="scratch-card" class="relative">
                 <button 
-                  onclick="navigator.clipboard.writeText(document.getElementById('giftcode').textContent.trim()); this.innerHTML = '✓ Copiado';"
-                  class="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  id="reveal-btn"
+                  class="w-full py-6 px-8 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 rounded-xl cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-500/30 active:scale-[0.98] scratch-shimmer"
                 >
-                  Copiar
+                  <div class="flex items-center justify-center gap-3">
+                    <svg class="w-6 h-6 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span class="text-xl font-bold text-amber-900">CLICK PARA VER CÓDIGO</span>
+                  </div>
+                  <p class="text-amber-800/70 text-xs mt-2">Raspa aquí para revelar tu código</p>
                 </button>
+              </div>
+
+              <!-- Código revelado (oculto inicialmente) -->
+              <div id="revealed-code" class="hidden">
+                <div class="flex items-center justify-center gap-4 py-4">
+                  <code id="giftcode" class="text-2xl font-mono font-bold text-primary tracking-wider">
+                    {purchasedCode}
+                  </code>
+                  <button 
+                    id="copy-btn"
+                    class="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal de advertencia -->
+            <div id="warning-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+              <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-2xl animate-scale-in">
+                <div class="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 class="text-xl font-bold text-white text-center mb-4">⚠️ Aviso Importante</h3>
+                <p class="text-gray-300 text-sm text-center mb-6 leading-relaxed">
+                  Luego de abierto y reclamado, <span class="text-red-400 font-semibold">no es reembolsable</span>. 
+                  Si ocurre un error en el canjeo, no olvide <span class="text-yellow-400 font-semibold">grabar desde que presiona "Ver Código"</span> para proceder a un reembolso.
+                </p>
+                <div class="flex gap-3">
+                  <button 
+                    id="cancel-reveal"
+                    class="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    id="confirm-reveal"
+                    class="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all"
+                  >
+                    Entendido, Ver Código
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -272,17 +311,15 @@ if (Astro.request.method === "POST" && session) {
               <!-- Botón Comprar -->
               {user ? (
                 hasStock ? (
-                  <form method="POST">
-                    <button 
-                      type="submit"
-                      class="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50 flex items-center justify-center gap-3"
-                    >
-                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                      </svg>
-                      Comprar Ahora - {formatPrice(giftcard.price)}
-                    </button>
-                  </form>
+                  <a 
+                    href={`/checkout/${id}`}
+                    class="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/50 flex items-center justify-center gap-3"
+                  >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Comprar Ahora - {formatPrice(giftcard.price)}
+                  </a>
                 ) : (
                   <button 
                     disabled
@@ -324,3 +361,161 @@ if (Astro.request.method === "POST" && session) {
     </main>
   </div>
 </Layout>
+
+<style>
+  /* Scratch card shimmer effect */
+  .scratch-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .scratch-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      left: -100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  /* Modal animation */
+  @keyframes scale-in {
+    0% {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out forwards;
+  }
+
+  /* Reveal animation */
+  @keyframes reveal-code {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-reveal {
+    animation: reveal-code 0.4s ease-out forwards;
+  }
+</style>
+
+<script>
+  // Scratch card functionality
+  const revealBtn = document.getElementById('reveal-btn');
+  const warningModal = document.getElementById('warning-modal');
+  const cancelReveal = document.getElementById('cancel-reveal');
+  const confirmReveal = document.getElementById('confirm-reveal');
+  const scratchCard = document.getElementById('scratch-card');
+  const revealedCode = document.getElementById('revealed-code');
+  const copyBtn = document.getElementById('copy-btn');
+  const giftcode = document.getElementById('giftcode');
+  const purchaseIdInput = document.getElementById('purchase-id') as HTMLInputElement;
+  const userIdInput = document.getElementById('user-id') as HTMLInputElement;
+
+  // Show warning modal when clicking scratch card
+  revealBtn?.addEventListener('click', () => {
+    if (warningModal) {
+      warningModal.classList.remove('hidden');
+      warningModal.classList.add('flex');
+    }
+  });
+
+  // Cancel - close modal
+  cancelReveal?.addEventListener('click', () => {
+    if (warningModal) {
+      warningModal.classList.add('hidden');
+      warningModal.classList.remove('flex');
+    }
+  });
+
+  // Close modal when clicking outside
+  warningModal?.addEventListener('click', (e) => {
+    if (e.target === warningModal) {
+      warningModal.classList.add('hidden');
+      warningModal.classList.remove('flex');
+    }
+  });
+
+  // Confirm - reveal the code and save to database
+  confirmReveal?.addEventListener('click', async () => {
+    if (warningModal) {
+      warningModal.classList.add('hidden');
+      warningModal.classList.remove('flex');
+    }
+    
+    // Animate scratch card disappearing
+    if (scratchCard) {
+      scratchCard.style.transition = 'all 0.5s ease-out';
+      scratchCard.style.transform = 'scale(0.8)';
+      scratchCard.style.opacity = '0';
+      
+      // Call API to mark code as revealed in database
+      const purchaseId = purchaseIdInput?.value;
+      const userId = userIdInput?.value;
+      if (purchaseId && userId) {
+        try {
+          const response = await fetch('/api/reveal-code', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ purchaseId, userId }),
+          });
+          const data = await response.json();
+          console.log('API Response:', data);
+        } catch (error) {
+          console.error('Error marking code as revealed:', error);
+        }
+      }
+      
+      setTimeout(() => {
+        scratchCard.classList.add('hidden');
+        if (revealedCode) {
+          revealedCode.classList.remove('hidden');
+          revealedCode.classList.add('animate-reveal');
+        }
+      }, 300);
+    }
+  });
+
+  // Copy functionality
+  copyBtn?.addEventListener('click', () => {
+    if (giftcode) {
+      navigator.clipboard.writeText(giftcode.textContent?.trim() || '');
+      if (copyBtn) {
+        copyBtn.innerHTML = '✓ Copiado';
+        setTimeout(() => {
+          copyBtn.innerHTML = 'Copiar';
+        }, 2000);
+      }
+    }
+  });
+</script>

@@ -1,0 +1,485 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { supabase, type SiteBanner } from "@/lib/supabase";
+import { Megaphone, Eye, EyeOff } from "lucide-react";
+import AdminSidebar from "@/components/AdminSidebar.astro";
+
+// Verificar autenticación y rol de admin
+const {
+  data: { session },
+} = await supabase.auth.getSession();
+
+if (!session) {
+  return Astro.redirect("/auth/login");
+}
+
+const { data: user } = await supabase
+  .from("profiles")
+  .select("*")
+  .eq("id", session.user.id)
+  .single();
+
+if (user?.role !== "admin") {
+  return Astro.redirect("/tienda");
+}
+
+// Manejar acciones
+let message = "";
+let error = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = formData.get("action")?.toString();
+
+  if (action === "update") {
+    const bannerMessage = formData.get("message")?.toString() || "";
+    const bannerMessage2 = formData.get("message_line2")?.toString() || "";
+    const backgroundColor = formData.get("background_color")?.toString() || "#dc2626";
+    const textColor = formData.get("text_color")?.toString() || "#ffffff";
+    const isActive = formData.get("is_active") === "on";
+    const isAnimated = formData.get("is_animated") === "on";
+
+    // Verificar si existe un banner
+    const { data: existingBanner } = await supabase
+      .from("site_banner")
+      .select("*")
+      .limit(1)
+      .single();
+
+    if (existingBanner) {
+      const { error: updateError } = await supabase
+        .from("site_banner")
+        .update({
+          message: bannerMessage,
+          message_line2: bannerMessage2,
+          background_color: backgroundColor,
+          text_color: textColor,
+          is_active: isActive,
+          is_animated: isAnimated,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingBanner.id);
+
+      if (updateError) {
+        error = updateError.message;
+      } else {
+        message = "Banner actualizado exitosamente";
+      }
+    } else {
+      const { error: createError } = await supabase
+        .from("site_banner")
+        .insert({
+          message: bannerMessage,
+          message_line2: bannerMessage2,
+          background_color: backgroundColor,
+          text_color: textColor,
+          is_active: isActive,
+          is_animated: isAnimated,
+        });
+
+      if (createError) {
+        error = createError.message;
+      } else {
+        message = "Banner creado exitosamente";
+      }
+    }
+  }
+}
+
+// Obtener banner actual
+const { data: banner } = await supabase
+  .from("site_banner")
+  .select("*")
+  .limit(1)
+  .single();
+---
+
+<Layout title="Gestionar Banner">
+  <div class="min-h-screen bg-slate-900">
+    <AdminSidebar activePage="banner" user={user} />
+
+    <!-- Main Content -->
+    <main class="ml-64 p-8">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-white">Banner de Anuncios</h1>
+          <p class="text-gray-400 mt-1">Configura el mensaje promocional que aparece en la tienda</p>
+        </div>
+      </div>
+
+      {
+        message && (
+          <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-6">
+            <p class="text-green-400">{message}</p>
+          </div>
+        )
+      }
+
+      {
+        error && (
+          <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
+            <p class="text-red-400">{error}</p>
+          </div>
+        )
+      }
+
+      <!-- Preview del Banner -->
+      <div class="mb-8">
+        <h2 class="text-lg font-semibold text-white mb-4">Vista Previa</h2>
+        <div 
+          id="bannerPreview"
+          class="relative overflow-hidden py-2"
+          style={`background-color: ${banner?.background_color || '#dc2626'}`}
+        >
+          <button
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white z-10 p-1"
+            aria-label="Cerrar banner (solo preview)"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+          <div id="marqueeContainer" class={banner?.is_animated !== false ? "marquee-container" : "static-container"}>
+            <div 
+              id="bannerTextContainer"
+              class={banner?.is_animated !== false ? "marquee-text" : "static-text"}
+            >
+              <p 
+                id="bannerText1"
+                class="whitespace-nowrap text-sm font-medium"
+                style={`color: ${banner?.text_color || '#ffffff'}`}
+              >
+                {banner?.message || "Linea 1: Escribe tu mensaje"}
+              </p>
+              <p 
+                id="bannerText2"
+                class="whitespace-nowrap text-sm font-medium"
+                style={`color: ${banner?.text_color || '#ffffff'}`}
+              >
+                {banner?.message_line2 || "Linea 2: Segundo mensaje"}
+              </p>
+            </div>
+          </div>
+        </div>
+        <p class="text-sm mt-2">
+          {banner?.is_active ? (
+            <span class="text-green-400">El banner está activo y visible en la tienda</span>
+          ) : (
+            <span class="text-gray-500">El banner está desactivado</span>
+          )}
+        </p>
+      </div>
+
+      <!-- Formulario de configuración -->
+      <div class="bg-slate-800/50 rounded-xl border border-white/10 p-6">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
+            <Megaphone className="w-6 h-6 text-red-400" client:load />
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">Configuración del Banner</h2>
+            <p class="text-gray-400 text-sm">Personaliza el mensaje y colores</p>
+          </div>
+        </div>
+
+        <form method="POST" class="space-y-6">
+          <input type="hidden" name="action" value="update" />
+
+          <!-- Mensajes -->
+          <div class="grid sm:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Linea 1 del Banner
+              </label>
+              <input
+                type="text"
+                name="message"
+                id="messageInput1"
+                required
+                value={banner?.message || ""}
+                class="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Ej: Semana de descuentos!"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Linea 2 del Banner
+              </label>
+              <input
+                type="text"
+                name="message_line2"
+                id="messageInput2"
+                value={banner?.message_line2 || ""}
+                class="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Ej: Hasta 50% OFF en todas las giftcards"
+              />
+            </div>
+          </div>
+
+          <!-- Tipo de animación -->
+          <div class="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-white/10">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <p class="text-white font-medium">Texto en Movimiento</p>
+                <p class="text-gray-400 text-sm">Activa para que el texto se mueva, desactiva para que quede fijo</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="is_animated"
+                id="isAnimatedCheckbox"
+                class="sr-only peer"
+                checked={banner?.is_animated !== false}
+              />
+              <div class="w-14 h-7 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500"></div>
+            </label>
+          </div>
+
+          <!-- Colores -->
+          <div class="grid sm:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Color de Fondo
+              </label>
+              <div class="flex items-center gap-3">
+                <input
+                  type="color"
+                  name="background_color"
+                  id="bgColorInput"
+                  value={banner?.background_color || "#dc2626"}
+                  class="w-12 h-12 rounded-lg border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  id="bgColorText"
+                  value={banner?.background_color || "#dc2626"}
+                  class="flex-1 px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm font-mono"
+                  readonly
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Color del Texto
+              </label>
+              <div class="flex items-center gap-3">
+                <input
+                  type="color"
+                  name="text_color"
+                  id="textColorInput"
+                  value={banner?.text_color || "#ffffff"}
+                  class="w-12 h-12 rounded-lg border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  id="textColorText"
+                  value={banner?.text_color || "#ffffff"}
+                  class="flex-1 px-4 py-2 bg-slate-900 border border-white/10 rounded-lg text-white text-sm font-mono"
+                  readonly
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Colores predefinidos -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Colores Predefinidos
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onclick="setColors('#dc2626', '#ffffff')"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style="background-color: #dc2626"
+              >
+                Rojo
+              </button>
+              <button
+                type="button"
+                onclick="setColors('#7c3aed', '#ffffff')"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style="background-color: #7c3aed"
+              >
+                Morado
+              </button>
+              <button
+                type="button"
+                onclick="setColors('#059669', '#ffffff')"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style="background-color: #059669"
+              >
+                Verde
+              </button>
+              <button
+                type="button"
+                onclick="setColors('#0284c7', '#ffffff')"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style="background-color: #0284c7"
+              >
+                Azul
+              </button>
+              <button
+                type="button"
+                onclick="setColors('#ea580c', '#ffffff')"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style="background-color: #ea580c"
+              >
+                Naranja
+              </button>
+              <button
+                type="button"
+                onclick="setColors('#db2777', '#ffffff')"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style="background-color: #db2777"
+              >
+                Rosa
+              </button>
+            </div>
+          </div>
+
+          <!-- Activar/Desactivar -->
+          <div class="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-white/10">
+            <div class="flex items-center gap-3">
+              {banner?.is_active ? (
+                <Eye className="w-5 h-5 text-green-400" client:load />
+              ) : (
+                <EyeOff className="w-5 h-5 text-gray-400" client:load />
+              )}
+              <div>
+                <p class="text-white font-medium">Mostrar Banner</p>
+                <p class="text-gray-400 text-sm">El banner será visible para todos los visitantes</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="is_active"
+                class="sr-only peer"
+                checked={banner?.is_active}
+              />
+              <div class="w-14 h-7 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          <!-- Botón Guardar -->
+          <div class="flex justify-end pt-4">
+            <button
+              type="submit"
+              class="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium transition-all"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<style>
+  .marquee-container {
+    overflow: hidden;
+    width: 100%;
+  }
+  
+  .marquee-text {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    animation: marquee 15s linear infinite;
+    padding-left: 100%;
+  }
+  
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  .static-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .static-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+</style>
+
+<script>
+  // Actualizar preview en tiempo real
+  const messageInput1 = document.getElementById('messageInput1') as HTMLInputElement;
+  const messageInput2 = document.getElementById('messageInput2') as HTMLInputElement;
+  const bgColorInput = document.getElementById('bgColorInput') as HTMLInputElement;
+  const textColorInput = document.getElementById('textColorInput') as HTMLInputElement;
+  const bgColorText = document.getElementById('bgColorText') as HTMLInputElement;
+  const textColorText = document.getElementById('textColorText') as HTMLInputElement;
+  const bannerPreview = document.getElementById('bannerPreview') as HTMLDivElement;
+  const bannerText1 = document.getElementById('bannerText1') as HTMLParagraphElement;
+  const bannerText2 = document.getElementById('bannerText2') as HTMLParagraphElement;
+  const isAnimatedCheckbox = document.getElementById('isAnimatedCheckbox') as HTMLInputElement;
+  const marqueeContainer = document.getElementById('marqueeContainer') as HTMLDivElement;
+  const bannerTextContainer = document.getElementById('bannerTextContainer') as HTMLDivElement;
+
+  if (messageInput1 && bannerText1) {
+    messageInput1.addEventListener('input', () => {
+      bannerText1.textContent = messageInput1.value || "Linea 1: Escribe tu mensaje";
+    });
+  }
+
+  if (messageInput2 && bannerText2) {
+    messageInput2.addEventListener('input', () => {
+      bannerText2.textContent = messageInput2.value || "Linea 2: Segundo mensaje";
+    });
+  }
+
+  if (bgColorInput && bannerPreview && bgColorText) {
+    bgColorInput.addEventListener('input', () => {
+      bannerPreview.style.backgroundColor = bgColorInput.value;
+      bgColorText.value = bgColorInput.value;
+    });
+  }
+
+  if (textColorInput && bannerText1 && bannerText2 && textColorText) {
+    textColorInput.addEventListener('input', () => {
+      bannerText1.style.color = textColorInput.value;
+      bannerText2.style.color = textColorInput.value;
+      textColorText.value = textColorInput.value;
+    });
+  }
+
+  if (isAnimatedCheckbox && marqueeContainer && bannerTextContainer) {
+    isAnimatedCheckbox.addEventListener('change', () => {
+      if (isAnimatedCheckbox.checked) {
+        marqueeContainer.className = 'marquee-container';
+        bannerTextContainer.className = 'marquee-text';
+      } else {
+        marqueeContainer.className = 'static-container';
+        bannerTextContainer.className = 'static-text';
+      }
+    });
+  }
+
+  // Función para colores predefinidos
+  (window as any).setColors = function(bg: string, text: string) {
+    if (bgColorInput) bgColorInput.value = bg;
+    if (textColorInput) textColorInput.value = text;
+    if (bgColorText) bgColorText.value = bg;
+    if (textColorText) textColorText.value = text;
+    if (bannerPreview) bannerPreview.style.backgroundColor = bg;
+    if (bannerText1) bannerText1.style.color = text;
+    if (bannerText2) bannerText2.style.color = text;
+  }
+</script>

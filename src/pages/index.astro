@@ -5,6 +5,7 @@ import {
   type GiftCard,
   type GiftCardCategory,
   type UserProfile,
+  type SiteBanner,
 } from "@/lib/supabase";
 import StoreNavbar from "@/components/StoreNavbar.astro";
 
@@ -22,6 +23,14 @@ if (session) {
     .single();
   user = data;
 }
+
+// Obtener banner activo
+const { data: banner } = await supabase
+  .from("site_banner")
+  .select("*")
+  .eq("is_active", true)
+  .limit(1)
+  .single();
 
 // Obtener categorías
 const { data: categories } = await supabase
@@ -88,6 +97,43 @@ const pageTitle = searchQuery
   <div
     class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
   >
+    <!-- Banner de Anuncios -->
+    {banner && (
+      <div 
+        id="promo-banner"
+        class="sticky top-0 left-0 right-0 overflow-hidden py-2 z-[60]"
+        style={`background-color: ${banner.background_color}`}
+      >
+        <button
+          onclick="document.getElementById('promo-banner').style.display='none'"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white z-10 p-1"
+          aria-label="Cerrar banner"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        <div class={banner.is_animated !== false ? "marquee-container pr-10" : "static-banner-container pr-10"}>
+          <div class={banner.is_animated !== false ? "marquee-text" : "static-banner-text"}>
+            <p 
+              class="whitespace-nowrap text-sm font-medium"
+              style={`color: ${banner.text_color}`}
+            >
+              {banner.message}
+            </p>
+            {banner.message_line2 && (
+              <p 
+                class="whitespace-nowrap text-sm font-medium"
+                style={`color: ${banner.text_color}`}
+              >
+                {banner.message_line2}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+
     <!-- Header -->
     <header
       class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10"
@@ -111,17 +157,57 @@ const pageTitle = searchQuery
 
             <!-- Buscador centrado -->
             <div class="flex-1 max-w-2xl">
-              <form action="/tienda" method="GET" class="w-full relative">
+              <form action="/tienda" method="GET" class="w-full flex items-center bg-white rounded-full shadow-lg shadow-black/10">
                 <input
                   type="text"
                   name="buscar"
                   placeholder="¿Qué estás buscando?"
                   value={Astro.url.searchParams.get("buscar") || ""}
-                  class="w-full px-4 py-2.5 md:py-3 pr-12 bg-slate-800 border border-white/10 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  class="flex-1 px-5 py-3 bg-transparent text-slate-900 placeholder-gray-400 text-sm border-0 focus:outline-none"
                 />
+                <div class="h-6 w-px bg-gray-200"></div>
+                <!-- Custom Dropdown -->
+                <div class="relative" id="category-dropdown">
+                  <input type="hidden" name="categoria" id="categoria-input" value="" />
+                  <button
+                    type="button"
+                    id="dropdown-trigger"
+                    class="px-4 py-3 bg-transparent text-slate-600 text-sm border-0 focus:outline-none cursor-pointer flex items-center gap-2"
+                  >
+                    <span id="dropdown-label">Categorías</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform duration-200" id="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div 
+                    id="dropdown-menu"
+                    class="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 opacity-0 invisible transform scale-95 transition-all duration-200 z-50 overflow-hidden"
+                  >
+                    <div class="py-2">
+                      <button
+                        type="button"
+                        class="dropdown-option w-full px-4 py-2.5 text-left text-sm text-slate-600 hover:bg-gray-50 transition-colors"
+                        data-value=""
+                        data-label="Categorías"
+                      >
+                        Todas las categorías
+                      </button>
+                      {categories && categories.map((cat: GiftCardCategory) => (
+                        <button
+                          type="button"
+                          class="dropdown-option w-full px-4 py-2.5 text-left text-sm text-slate-600 hover:bg-gray-50 transition-colors"
+                          data-value={cat.id}
+                          data-label={cat.name}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
                 <button
                   type="submit"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 bg-primary hover:bg-primary/90 text-white p-2 rounded-lg transition-all"
+                  class="bg-primary hover:bg-primary/90 text-white p-3 rounded-full m-1 transition-all flex items-center justify-center"
                 >
                   <svg
                     class="w-5 h-5"
@@ -140,23 +226,40 @@ const pageTitle = searchQuery
             </div>
 
             <!-- Usuario -->
-            <div class="flex items-center gap-4 shrink-0">
+            <div class="flex items-center gap-2 shrink-0">
               {
                 user ? (
-                  <div class="flex items-center gap-4">
-                    <div class="hidden sm:block text-right">
-                      <p class="text-sm text-white font-medium">
-                        {user.full_name}
-                      </p>
-                      <p class="text-xs text-gray-400 capitalize">
-                        {user.role}
-                      </p>
-                    </div>
+                  <div class="flex items-center gap-2">
+                    <!-- Favoritos (corazón) -->
+                    <a
+                      href="/favoritos"
+                      class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-full transition-all"
+                      title="Favoritos"
+                    >
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </a>
+                    <!-- Carrito -->
+                    <a
+                      href="/carrito"
+                      class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-white/5 rounded-full transition-all"
+                      title="Carrito"
+                    >
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </a>
+                    <!-- Perfil con inicial -->
                     <div class="relative group">
-                      <button class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-semibold">
+                      <button class="w-11 h-11 bg-primary/20 rounded-full flex items-center justify-center text-primary font-semibold text-lg hover:bg-primary/30 transition-all" title="Mi cuenta">
                         {user.full_name?.charAt(0).toUpperCase()}
                       </button>
-                      <div class="absolute right-0 top-12 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                      <div class="absolute right-0 top-12 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                        <div class="p-3 border-b border-white/10">
+                          <p class="text-sm text-white font-medium">{user.full_name}</p>
+                          <p class="text-xs text-gray-400 capitalize">{user.role}</p>
+                        </div>
                         <div class="p-2">
                           {user.role === "admin" && (
                             <a
@@ -218,105 +321,24 @@ const pageTitle = searchQuery
           </div>
         </div>
 
-        <!-- Fila inferior: Navegación de páginas -->
+        <!-- Fila inferior: Categorías centradas -->
         <div class="border-t border-white/5 bg-slate-900/50">
           <div class="container mx-auto px-4">
             <nav
-              class="flex items-center gap-1 overflow-x-auto py-2 scrollbar-hide"
+              class="flex items-center justify-center gap-2 overflow-x-auto py-2 scrollbar-hide"
             >
-              <a
-                href="/"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap bg-primary/20 text-primary transition-all"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  ></path>
-                </svg>
-                Tienda
-              </a>
               {
-                user && (
+                categories && categories.map((cat: GiftCardCategory) => (
                   <a
-                    href="/mis-compras"
+                    href={`/tienda?categoria=${cat.id}`}
                     class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
                   >
-                    <svg
-                      class="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                      />
-                    </svg>
-                    Mis Compras
+                    {cat.image_url && (
+                      <img src={cat.image_url} alt={cat.name} class="w-5 h-5 object-contain" />
+                    )}
+                    {cat.name}
                   </a>
-                )
-              }
-              {
-                user?.role === "admin" && (
-                  <a
-                    href="/admin/dashboard"
-                    class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <svg
-                      class="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                      />
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    Panel Admin
-                  </a>
-                )
-              }
-              {
-                user?.role === "proveedor" && (
-                  <a
-                    href="/proveedor/dashboard"
-                    class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <svg
-                      class="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                      />
-                    </svg>
-                    Panel Proveedor
-                  </a>
-                )
+                ))
               }
             </nav>
           </div>
@@ -324,7 +346,7 @@ const pageTitle = searchQuery
       </header>
 
     <!-- Primera sección: Pantalla completa (Hero + Categorías) -->
-    <section class="flex flex-col" style="min-height: calc(100vh - 130px);">
+    <section id="hero-section" class="flex flex-col hero-viewport">
       <!-- Hero Banner -->
       <div class="flex-1 flex flex-col">
         <div class="flex-1 relative overflow-hidden">
@@ -518,15 +540,15 @@ const pageTitle = searchQuery
 
     <!-- Footer -->
     <footer class="border-t border-white/10 mt-16 bg-slate-950">
-      <div class="container mx-auto px-4 py-12">
+      <div class="container mx-auto px-4 py-4">
         <div
-          class="flex flex-col md:flex-row items-center justify-between gap-8"
+          class="flex flex-col md:flex-row items-center justify-between gap-4"
         >
           <div class="flex items-center gap-2">
             <img
               src="/Reload.svg"
               alt="Reload"
-              class="h-14 w-auto"
+              class="h-8 w-auto"
             />
           </div>
           <p class="text-gray-500 text-sm">
@@ -623,9 +645,137 @@ const pageTitle = searchQuery
     left: 60px;
     opacity: 1;
   }
+
+  /* Animación del banner marquee */
+  .marquee-container {
+    overflow: hidden;
+    width: 100%;
+  }
+  
+  .marquee-text {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    animation: marquee 20s linear infinite;
+    padding-left: 100%;
+  }
+  
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
+  .marquee-text:hover {
+    animation-play-state: paused;
+  }
+
+  /* Banner estático */
+  .static-banner-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .static-banner-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Hero viewport dinámico */
+  .hero-viewport {
+    min-height: calc(100vh - var(--header-height, 130px));
+  }
 </style>
 
 <script>
+  // Calcular altura del header dinámicamente
+  function updateHeroHeight() {
+    const header = document.querySelector('header');
+    const banner = document.getElementById('promo-banner');
+    const heroSection = document.getElementById('hero-section');
+    
+    if (heroSection) {
+      let totalHeight = 0;
+      if (header) totalHeight += header.offsetHeight;
+      if (banner && banner.style.display !== 'none') totalHeight += banner.offsetHeight;
+      
+      heroSection.style.minHeight = `calc(100vh - ${totalHeight}px)`;
+    }
+  }
+  
+  // Ejecutar al cargar y al redimensionar
+  updateHeroHeight();
+  window.addEventListener('resize', updateHeroHeight);
+  
+  // Observer para cuando se cierre el banner
+  const bannerEl = document.getElementById('promo-banner');
+  if (bannerEl) {
+    const observer = new MutationObserver(updateHeroHeight);
+    observer.observe(bannerEl, { attributes: true, attributeFilter: ['style'] });
+  }
+
+  // Custom Dropdown functionality
+  const dropdownTrigger = document.getElementById('dropdown-trigger');
+  const dropdownMenu = document.getElementById('dropdown-menu');
+  const dropdownArrow = document.getElementById('dropdown-arrow');
+  const dropdownLabel = document.getElementById('dropdown-label');
+  const categoriaInput = document.getElementById('categoria-input') as HTMLInputElement;
+  const dropdownOptions = document.querySelectorAll('.dropdown-option');
+
+  let isDropdownOpen = false;
+
+  function toggleDropdown() {
+    isDropdownOpen = !isDropdownOpen;
+    if (isDropdownOpen) {
+      dropdownMenu?.classList.remove('opacity-0', 'invisible', 'scale-95');
+      dropdownMenu?.classList.add('opacity-100', 'visible', 'scale-100');
+      dropdownArrow?.classList.add('rotate-180');
+    } else {
+      dropdownMenu?.classList.add('opacity-0', 'invisible', 'scale-95');
+      dropdownMenu?.classList.remove('opacity-100', 'visible', 'scale-100');
+      dropdownArrow?.classList.remove('rotate-180');
+    }
+  }
+
+  function closeDropdown() {
+    isDropdownOpen = false;
+    dropdownMenu?.classList.add('opacity-0', 'invisible', 'scale-95');
+    dropdownMenu?.classList.remove('opacity-100', 'visible', 'scale-100');
+    dropdownArrow?.classList.remove('rotate-180');
+  }
+
+  dropdownTrigger?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleDropdown();
+  });
+
+  dropdownOptions.forEach((option) => {
+    option.addEventListener('click', (e) => {
+      e.preventDefault();
+      const value = (option as HTMLElement).dataset.value || '';
+      const label = (option as HTMLElement).dataset.label || 'Categorías';
+      
+      if (categoriaInput) categoriaInput.value = value;
+      if (dropdownLabel) dropdownLabel.textContent = label;
+      
+      closeDropdown();
+    });
+  });
+
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('category-dropdown');
+    if (dropdown && !dropdown.contains(e.target as Node)) {
+      closeDropdown();
+    }
+  });
+
   function handleSort(value: string) {
     const url = new URL(window.location.href);
     url.searchParams.set("orden", value);

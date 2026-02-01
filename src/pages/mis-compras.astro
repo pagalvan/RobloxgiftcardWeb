@@ -2,7 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import { supabase, type UserProfile, type Purchase } from "@/lib/supabase";
 import { formatDate, formatPrice } from "@/lib/utils";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Clock, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import StoreNavbar from "@/components/StoreNavbar.astro";
 
 // Verificar autenticación
@@ -33,10 +33,18 @@ const { data: purchases } = await supabase
   )
   .eq("user_id", session.user.id)
   .order("created_at", { ascending: false });
+
+// Mapeo de estados de pago
+const paymentStatusLabels: Record<string, { label: string; color: string; bgColor: string }> = {
+  'pending_payment': { label: 'Esperando pago', color: 'text-gray-400', bgColor: 'bg-gray-500/20' },
+  'awaiting_confirmation': { label: 'Verificando pago', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20' },
+  'confirmed': { label: 'Pago confirmado', color: 'text-green-400', bgColor: 'bg-green-500/20' },
+  'rejected': { label: 'Pago rechazado', color: 'text-red-400', bgColor: 'bg-red-500/20' },
+};
 ---
 
 <Layout title="Mis Compras">
-  <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+  <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
     <StoreNavbar user={user as any} activePage="mis-compras" />
 
     <main class="container mx-auto px-4 py-8">
@@ -46,7 +54,13 @@ const { data: purchases } = await supabase
         {
           purchases && purchases.length > 0 ? (
             <div class="space-y-4">
-              {purchases.map((purchase: any) => (
+              {purchases.map((purchase: any) => {
+                const paymentStatus = paymentStatusLabels[purchase.payment_status] || paymentStatusLabels['confirmed'];
+                const isConfirmed = purchase.payment_status === 'confirmed' || purchase.status === 'completed';
+                const isRejected = purchase.payment_status === 'rejected';
+                const isPending = purchase.payment_status === 'awaiting_confirmation';
+                
+                return (
                 <div class="bg-slate-800/50 rounded-xl border border-white/10 p-6">
                   <div class="flex items-center gap-6">
                     <div class="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
@@ -83,47 +97,126 @@ const { data: purchases } = await supabase
                         {formatPrice(purchase.amount)}
                       </p>
                       <span
-                        class:list={[
-                          "text-xs px-2 py-0.5 rounded-full",
-                          purchase.status === "completed"
-                            ? "bg-green-500/20 text-green-400"
-                            : purchase.status === "pending"
-                              ? "bg-yellow-500/20 text-yellow-400"
-                              : "bg-red-500/20 text-red-400",
-                        ]}
+                        class={`text-xs px-2 py-0.5 rounded-full ${paymentStatus.bgColor} ${paymentStatus.color}`}
                       >
-                        {purchase.status === "completed"
-                          ? "Completada"
-                          : purchase.status === "pending"
-                            ? "Pendiente"
-                            : "Fallida"}
+                        {paymentStatus.label}
                       </span>
                     </div>
                   </div>
 
-                  {purchase.status === "completed" && purchase.code && (
+                  {/* Estado: Verificando pago */}
+                  {isPending && (
                     <div class="mt-4 pt-4 border-t border-white/10">
-                      <div class="flex items-center justify-between bg-slate-900/50 rounded-lg p-4">
-                        <div>
-                          <p class="text-xs text-gray-400 mb-1">Código:</p>
-                          <code
-                            id={`code-${purchase.id}`}
-                            class="text-primary font-mono font-bold tracking-wider"
+                      <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                        <div class="flex items-start gap-3">
+                          <Clock className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5 animate-pulse" />
+                          <div class="flex-1">
+                            <h4 class="font-medium text-yellow-400">Verificando tu pago</h4>
+                            <p class="text-sm text-gray-400 mt-1">
+                              Estamos verificando tu comprobante de pago. Te notificaremos cuando esté confirmado.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            class="cancel-purchase-btn text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-all border border-red-500/30"
+                            data-purchase-id={purchase.id}
                           >
-                            {purchase.code.code}
-                          </code>
+                            Solicitar Reembolso
+                          </button>
                         </div>
-                        <button
-                          onclick={`navigator.clipboard.writeText(document.getElementById('code-${purchase.id}').textContent.trim()); this.innerHTML = '✓ Copiado'; setTimeout(() => this.innerHTML = 'Copiar', 2000);`}
-                          class="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                        >
-                          Copiar
-                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Estado: Pago rechazado */}
+                  {isRejected && (
+                    <div class="mt-4 pt-4 border-t border-white/10">
+                      <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <div class="flex items-start gap-3">
+                          <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                          <div>
+                            <h4 class="font-medium text-red-400">Pago rechazado</h4>
+                            <p class="text-sm text-gray-400 mt-1">
+                              {purchase.rejection_reason || 'Tu pago no pudo ser verificado. Si crees que es un error, contáctanos.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Estado: Confirmado - Mostrar código */}
+                  {isConfirmed && purchase.code && (
+                    <div class="mt-4 pt-4 border-t border-white/10">
+                      <div class="bg-slate-900/50 rounded-lg p-4">
+                        {purchase.is_code_revealed ? (
+                          <!-- Código ya revelado -->
+                          <div class="flex items-center justify-between">
+                            <div>
+                              <p class="text-xs text-gray-400 mb-1">Código:</p>
+                              <code
+                                id={`code-${purchase.id}`}
+                                class="text-primary font-mono font-bold tracking-wider"
+                              >
+                                {purchase.code.code}
+                              </code>
+                            </div>
+                            <button
+                              type="button"
+                              class="copy-btn bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                              data-code-id={`code-${purchase.id}`}
+                            >
+                              Copiar
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <!-- Scratch card (código no revelado) -->
+                            <div id={`scratch-${purchase.id}`} class="scratch-card">
+                              <button 
+                                type="button"
+                                class="reveal-btn w-full py-4 px-6 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 rounded-lg cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-500/30 active:scale-[0.98] scratch-shimmer"
+                                data-purchase-id={purchase.id}
+                              >
+                                <div class="flex items-center justify-center gap-2">
+                                  <svg class="w-5 h-5 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  <span class="font-bold text-amber-900">Ver Código</span>
+                                </div>
+                              </button>
+                            </div>
+
+                            <!-- Código revelado (oculto inicialmente) -->
+                            <div id={`revealed-${purchase.id}`} class="revealed-code hidden">
+                              <div class="flex items-center justify-between">
+                                <div>
+                                  <p class="text-xs text-gray-400 mb-1">Código:</p>
+                                  <code
+                                    id={`code-${purchase.id}`}
+                                    class="text-primary font-mono font-bold tracking-wider"
+                                  >
+                                    Cargando...
+                                  </code>
+                                </div>
+                                <button
+                                  type="button"
+                                  class="copy-btn bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                  data-code-id={`code-${purchase.id}`}
+                                >
+                                  Copiar
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           ) : (
             <div class="text-center py-20">
@@ -147,5 +240,356 @@ const { data: purchases } = await supabase
         }
       </div>
     </main>
+
+    <!-- User ID hidden for API calls -->
+    <input type="hidden" id="user-id" value={session.user.id} />
+
+    <!-- Modal de advertencia global -->
+    <div id="warning-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-2xl animate-scale-in">
+        <div class="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-white text-center mb-4">⚠️ Aviso Importante</h3>
+        <p class="text-gray-300 text-sm text-center mb-6 leading-relaxed">
+          Luego de abierto y reclamado, <span class="text-red-400 font-semibold">no es reembolsable</span>. 
+          Si ocurre un error en el canjeo, no olvide <span class="text-yellow-400 font-semibold">grabar desde que presiona "Ver Código"</span> para proceder a un reembolso.
+        </p>
+        <div class="flex gap-3">
+          <button 
+            id="cancel-reveal"
+            class="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all"
+          >
+            Cancelar
+          </button>
+          <button 
+            id="confirm-reveal"
+            class="flex-1 px-4 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all"
+          >
+            Entendido, Ver Código
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de cancelación/reembolso -->
+    <div id="cancel-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-2xl animate-scale-in">
+        <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-white text-center mb-2">Solicitar Reembolso</h3>
+        <p class="text-gray-400 text-sm text-center mb-6">
+          Cuéntanos por qué quieres cancelar tu compra para procesar tu reembolso.
+        </p>
+        
+        <input type="hidden" id="cancel-purchase-id" value="" />
+        
+        <div class="mb-4">
+          <label for="cancel-reason" class="block text-sm font-medium text-gray-300 mb-2">
+            Motivo de cancelación *
+          </label>
+          <textarea
+            id="cancel-reason"
+            rows="3"
+            placeholder="Ej: Me equivoqué de monto, no era el producto que quería, etc."
+            class="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 resize-none"
+          ></textarea>
+          <p class="text-xs text-gray-500 mt-1">Mínimo 5 caracteres</p>
+        </div>
+
+        <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
+          <p class="text-xs text-yellow-400">
+            ⚠️ <strong>Nota:</strong> El reembolso se procesa manualmente. Te notificaremos cuando esté listo.
+          </p>
+        </div>
+
+        <!-- Mensaje de error -->
+        <div id="cancel-error" class="hidden bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+          <p id="cancel-error-text" class="text-sm text-red-400"></p>
+        </div>
+
+        <!-- Mensaje de éxito -->
+        <div id="cancel-success" class="hidden bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
+          <p id="cancel-success-text" class="text-sm text-green-400"></p>
+        </div>
+
+        <div class="flex gap-3">
+          <button 
+            id="close-cancel-modal"
+            class="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all"
+          >
+            Volver
+          </button>
+          <button 
+            id="submit-cancel"
+            class="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all"
+          >
+            Solicitar Reembolso
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </Layout>
+
+<style>
+  /* Scratch card shimmer effect */
+  .scratch-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .scratch-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+
+  @keyframes scale-in {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out forwards;
+  }
+</style>
+
+<script>
+  // Modal and reveal functionality
+  const warningModal = document.getElementById('warning-modal');
+  const cancelReveal = document.getElementById('cancel-reveal');
+  const confirmReveal = document.getElementById('confirm-reveal');
+  const userIdInput = document.getElementById('user-id') as HTMLInputElement;
+  let currentPurchaseId: string | null = null;
+
+  // Add click handlers to all reveal buttons
+  document.querySelectorAll('.reveal-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      currentPurchaseId = (btn as HTMLElement).dataset.purchaseId || null;
+      if (warningModal) {
+        warningModal.classList.remove('hidden');
+        warningModal.classList.add('flex');
+      }
+    });
+  });
+
+  // Cancel button
+  cancelReveal?.addEventListener('click', () => {
+    currentPurchaseId = null;
+    if (warningModal) {
+      warningModal.classList.add('hidden');
+      warningModal.classList.remove('flex');
+    }
+  });
+
+  // Close modal when clicking outside
+  warningModal?.addEventListener('click', (e) => {
+    if (e.target === warningModal) {
+      currentPurchaseId = null;
+      warningModal.classList.add('hidden');
+      warningModal.classList.remove('flex');
+    }
+  });
+
+  // Confirm reveal - call API to mark as revealed
+  confirmReveal?.addEventListener('click', async () => {
+    if (currentPurchaseId) {
+      const scratchCard = document.getElementById(`scratch-${currentPurchaseId}`);
+      const revealedCode = document.getElementById(`revealed-${currentPurchaseId}`);
+      const codeElement = document.getElementById(`code-${currentPurchaseId}`);
+      const userId = userIdInput?.value;
+      
+      if (scratchCard && revealedCode) {
+        // Animate scratch card disappearing
+        scratchCard.style.transition = 'all 0.3s ease-out';
+        scratchCard.style.transform = 'scale(0.8)';
+        scratchCard.style.opacity = '0';
+        
+        try {
+          // Call API to reveal code and mark in database
+          const response = await fetch('/api/reveal-code', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ purchaseId: currentPurchaseId, userId }),
+          });
+          
+          const data = await response.json();
+          console.log('API Response:', data);
+          
+          if (data.success && codeElement) {
+            codeElement.textContent = data.code;
+          } else if (data.error) {
+            console.error('API Error:', data.error, data.details);
+          }
+          
+          setTimeout(() => {
+            scratchCard.classList.add('hidden');
+            revealedCode.classList.remove('hidden');
+          }, 200);
+          
+        } catch (error) {
+          console.error('Error revealing code:', error);
+          // Revert animation on error
+          scratchCard.style.transform = 'scale(1)';
+          scratchCard.style.opacity = '1';
+        }
+      }
+    }
+    
+    currentPurchaseId = null;
+    if (warningModal) {
+      warningModal.classList.add('hidden');
+      warningModal.classList.remove('flex');
+    }
+  });
+
+  // Copy functionality
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const codeId = (btn as HTMLElement).dataset.codeId;
+      if (codeId) {
+        const codeEl = document.getElementById(codeId);
+        if (codeEl) {
+          navigator.clipboard.writeText(codeEl.textContent?.trim() || '');
+          btn.innerHTML = '✓ Copiado';
+          setTimeout(() => {
+            btn.innerHTML = 'Copiar';
+          }, 2000);
+        }
+      }
+    });
+  });
+
+  // Cancel purchase functionality
+  const cancelModal = document.getElementById('cancel-modal');
+  const cancelPurchaseIdInput = document.getElementById('cancel-purchase-id') as HTMLInputElement;
+  const cancelReasonInput = document.getElementById('cancel-reason') as HTMLTextAreaElement;
+  const closeCancelModalBtn = document.getElementById('close-cancel-modal');
+  const submitCancelBtn = document.getElementById('submit-cancel');
+  const cancelError = document.getElementById('cancel-error');
+  const cancelErrorText = document.getElementById('cancel-error-text');
+  const cancelSuccess = document.getElementById('cancel-success');
+  const cancelSuccessText = document.getElementById('cancel-success-text');
+
+  // Función para mostrar error en el modal
+  function showCancelError(message: string) {
+    if (cancelError && cancelErrorText) {
+      cancelErrorText.textContent = message;
+      cancelError.classList.remove('hidden');
+      cancelSuccess?.classList.add('hidden');
+    }
+  }
+
+  // Función para mostrar éxito en el modal
+  function showCancelSuccess(message: string) {
+    if (cancelSuccess && cancelSuccessText) {
+      cancelSuccessText.textContent = message;
+      cancelSuccess.classList.remove('hidden');
+      cancelError?.classList.add('hidden');
+    }
+  }
+
+  // Función para resetear mensajes
+  function resetCancelMessages() {
+    cancelError?.classList.add('hidden');
+    cancelSuccess?.classList.add('hidden');
+  }
+
+  // Abrir modal de cancelación
+  document.querySelectorAll('.cancel-purchase-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const purchaseId = (btn as HTMLElement).dataset.purchaseId;
+      if (purchaseId && cancelModal && cancelPurchaseIdInput) {
+        cancelPurchaseIdInput.value = purchaseId;
+        cancelReasonInput.value = '';
+        resetCancelMessages();
+        cancelModal.classList.remove('hidden');
+        cancelModal.classList.add('flex');
+      }
+    });
+  });
+
+  // Cerrar modal
+  closeCancelModalBtn?.addEventListener('click', () => {
+    if (cancelModal) {
+      cancelModal.classList.add('hidden');
+      cancelModal.classList.remove('flex');
+    }
+  });
+
+  // Enviar solicitud de cancelación
+  submitCancelBtn?.addEventListener('click', async () => {
+    const purchaseId = cancelPurchaseIdInput?.value;
+    const userId = (document.getElementById('user-id') as HTMLInputElement)?.value;
+    const reason = cancelReasonInput?.value.trim();
+
+    resetCancelMessages();
+
+    if (!reason || reason.length < 5) {
+      showCancelError('Por favor escribe un motivo de cancelación (mínimo 5 caracteres)');
+      return;
+    }
+
+    const button = submitCancelBtn as HTMLButtonElement;
+    button.disabled = true;
+    button.textContent = 'Enviando...';
+
+    try {
+      const response = await fetch('/api/cancel-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaseId, userId, reason })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showCancelSuccess(data.message || '¡Solicitud enviada! Redirigiendo...');
+        // Redirigir después de 2 segundos
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        showCancelError(data.error || 'Error al procesar la solicitud');
+        button.disabled = false;
+        button.textContent = 'Solicitar Reembolso';
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showCancelError('Error al conectar con el servidor. Intenta de nuevo.');
+      button.disabled = false;
+      button.textContent = 'Solicitar Reembolso';
+    }
+  });
+
+  // Cerrar modal al hacer clic fuera
+  cancelModal?.addEventListener('click', (e) => {
+    if (e.target === cancelModal) {
+      cancelModal.classList.add('hidden');
+      cancelModal.classList.remove('flex');
+    }
+  });
+</script>

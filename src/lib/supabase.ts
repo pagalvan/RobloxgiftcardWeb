@@ -61,13 +61,45 @@ export interface Purchase {
   id: string;
   user_id: string;
   giftcard_id: string;
-  giftcard_code_id: string;
+  giftcard_code_id?: string;
   amount: number;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'awaiting_confirmation' | 'completed' | 'failed' | 'refunded' | 'rejected';
   payment_method?: string;
+  // Campos para pago Nequi
+  depositor_name?: string;
+  payment_proof_url?: string;
+  payment_status: 'pending_payment' | 'awaiting_confirmation' | 'confirmed' | 'rejected';
+  payment_confirmed_at?: string;
+  payment_confirmed_by?: string;
+  rejection_reason?: string;
+  // Token para confirmación WhatsApp
+  confirmation_token?: string;
+  // Campos para código revelado
+  is_code_revealed: boolean;
+  code_revealed_at?: string;
   created_at: string;
   giftcard?: GiftCard;
   code?: GiftCardCode;
+}
+
+export interface StoreSettings {
+  id: string;
+  setting_key: string;
+  setting_value: string;
+  description?: string;
+  updated_at: string;
+}
+
+export interface SiteBanner {
+  id: string;
+  message: string;
+  message_line2?: string;
+  is_animated: boolean;
+  is_active: boolean;
+  background_color: string;
+  text_color: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Funciones de autenticación

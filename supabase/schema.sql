@@ -101,10 +101,48 @@ CREATE TABLE IF NOT EXISTS public.purchases (
   giftcard_id UUID REFERENCES public.giftcards(id) ON DELETE SET NULL NOT NULL,
   giftcard_code_id UUID REFERENCES public.giftcard_codes(id) ON DELETE SET NULL,
   amount DECIMAL(10,2) NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
-  payment_method TEXT,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'awaiting_confirmation', 'completed', 'failed', 'refunded', 'rejected')),
+  payment_method TEXT DEFAULT 'nequi',
+  -- Campos para pago Nequi
+  depositor_name TEXT,
+  payment_proof_url TEXT,
+  payment_status TEXT DEFAULT 'pending_payment' CHECK (payment_status IN ('pending_payment', 'awaiting_confirmation', 'confirmed', 'rejected')),
+  payment_confirmed_at TIMESTAMPTZ,
+  payment_confirmed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  rejection_reason TEXT,
+  -- Token para confirmación por WhatsApp (seguridad)
+  confirmation_token TEXT UNIQUE,
+  -- Campos para código revelado
+  is_code_revealed BOOLEAN DEFAULT false,
+  code_revealed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- =============================================
+-- TABLA: store_settings (Configuración de la tienda)
+-- =============================================
+CREATE TABLE IF NOT EXISTS public.store_settings (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  setting_key TEXT UNIQUE NOT NULL,
+  setting_value TEXT NOT NULL,
+  description TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Datos iniciales para configuración de Nequi
+INSERT INTO public.store_settings (setting_key, setting_value, description) VALUES
+  ('nequi_phone', '3001234567', 'Número de Nequi para recibir pagos'),
+  ('nequi_name', 'Tu Nombre', 'Nombre del titular de la cuenta Nequi'),
+  ('admin_whatsapp', '573001234567', 'Número de WhatsApp del admin para notificaciones (con código de país)')
+ON CONFLICT (setting_key) DO NOTHING;
+
+-- Migración: Agregar nuevas columnas si no existen
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS depositor_name TEXT;
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_proof_url TEXT;
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'pending_payment';
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_confirmed_at TIMESTAMPTZ;
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_confirmed_by UUID;
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
 
 -- =============================================
 -- POLÍTICAS DE SEGURIDAD (RLS)
@@ -116,6 +154,21 @@ ALTER TABLE public.giftcard_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.giftcards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.giftcard_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.purchases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
+
+-- POLÍTICAS PARA STORE_SETTINGS
+DROP POLICY IF EXISTS "Store settings are viewable by everyone" ON public.store_settings;
+CREATE POLICY "Store settings are viewable by everyone" ON public.store_settings
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage store settings" ON public.store_settings;
+CREATE POLICY "Admins can manage store settings" ON public.store_settings
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
 
 -- POLÍTICAS PARA PROFILES
 DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
@@ -214,6 +267,10 @@ CREATE POLICY "Users can view their own purchases" ON public.purchases
 DROP POLICY IF EXISTS "Users can create purchases" ON public.purchases;
 CREATE POLICY "Users can create purchases" ON public.purchases
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own purchases" ON public.purchases;
+CREATE POLICY "Users can update their own purchases" ON public.purchases
+  FOR UPDATE USING (user_id = auth.uid());
 
 -- =============================================
 -- DATOS INICIALES
@@ -357,8 +414,74 @@ CREATE TRIGGER update_giftcards_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================
+-- TABLA: site_banner (Banner de anuncios)
+-- =============================================
+CREATE TABLE IF NOT EXISTS public.site_banner (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  message TEXT NOT NULL,
+  message_line2 TEXT,
+  is_animated BOOLEAN DEFAULT true,
+  is_active BOOLEAN DEFAULT false,
+  background_color TEXT DEFAULT '#dc2626',
+  text_color TEXT DEFAULT '#ffffff',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Habilitar RLS
+ALTER TABLE public.site_banner ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para site_banner
+DROP POLICY IF EXISTS "Banner is viewable by everyone" ON public.site_banner;
+CREATE POLICY "Banner is viewable by everyone" ON public.site_banner
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage banner" ON public.site_banner;
+CREATE POLICY "Admins can manage banner" ON public.site_banner
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Insertar banner por defecto
+INSERT INTO public.site_banner (message, message_line2, is_animated, is_active) 
+VALUES ('Bienvenido a Reload!', 'Las mejores giftcards al mejor precio.', true, false)
+ON CONFLICT DO NOTHING;
+
+-- =============================================
+-- STORAGE BUCKET PARA COMPROBANTES DE PAGO
+-- =============================================
+-- NOTA: Esto se debe crear manualmente en Supabase Dashboard > Storage
+-- 1. Ir a Storage
+-- 2. Crear bucket llamado "payment-proofs"
+-- 3. Configurarlo como PUBLIC
+-- 4. En Policies agregar:
+--    - INSERT: authenticated users
+--    - SELECT: public
+
+-- =============================================
 -- GRANT PERMISOS
 -- =============================================
 GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, authenticated, anon;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, authenticated, anon;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres, authenticated, anon;
+
+-- =============================================
+-- MIGRACIÓN: Agregar nuevas columnas a purchases
+-- Ejecutar este bloque si ya tienes la tabla purchases
+-- =============================================
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS depositor_name TEXT;
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_proof_url TEXT;
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'pending_payment';
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_confirmed_at TIMESTAMPTZ;
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS payment_confirmed_by UUID REFERENCES public.profiles(id);
+-- ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+-- ALTER TABLE public.purchases DROP CONSTRAINT IF EXISTS purchases_status_check;
+-- ALTER TABLE public.purchases ADD CONSTRAINT purchases_status_check CHECK (status IN ('pending', 'awaiting_confirmation', 'completed', 'failed', 'refunded', 'rejected'));
+-- ALTER TABLE public.purchases ADD CONSTRAINT purchases_payment_status_check CHECK (payment_status IN ('pending_payment', 'awaiting_confirmation', 'confirmed', 'rejected'));
+
+-- Política para que usuarios puedan actualizar sus compras (necesaria para reveal-code)
+-- DROP POLICY IF EXISTS "Users can update their own purchases" ON public.purchases;
+-- CREATE POLICY "Users can update their own purchases" ON public.purchases FOR UPDATE USING (user_id = auth.uid());

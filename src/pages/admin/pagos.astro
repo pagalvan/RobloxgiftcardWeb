@@ -1,0 +1,457 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import AdminSidebar from "@/components/AdminSidebar.astro";
+import { supabase } from "@/lib/supabase";
+import { formatDate, formatPrice } from "@/lib/utils";
+import { Clock, CheckCircle2, XCircle, Eye, AlertTriangle, User, Calendar, CreditCard, Image } from "lucide-react";
+
+// Verificar autenticación y rol admin
+const { data: { session } } = await supabase.auth.getSession();
+
+if (!session) {
+  return Astro.redirect('/auth/login');
+}
+
+const { data: user } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', session.user.id)
+  .single();
+
+if (!user || user.role !== 'admin') {
+  return Astro.redirect('/');
+}
+
+// Filtro por estado
+const url = new URL(Astro.request.url);
+const statusFilter = url.searchParams.get('status') || 'awaiting_confirmation';
+
+// Obtener compras según filtro
+let query = supabase
+  .from('purchases')
+  .select(`
+    *,
+    user:profiles!purchases_user_id_fkey(id, email, full_name),
+    giftcard:giftcards(name, denomination, currency, image_url),
+    code:giftcard_codes(code),
+    confirmed_by:profiles!purchases_payment_confirmed_by_fkey(full_name)
+  `)
+  .order('created_at', { ascending: false });
+
+if (statusFilter !== 'all') {
+  query = query.eq('payment_status', statusFilter);
+}
+
+const { data: purchases } = await query;
+
+// Contar pendientes
+const { count: pendingCount } = await supabase
+  .from('purchases')
+  .select('*', { count: 'exact', head: true })
+  .eq('payment_status', 'awaiting_confirmation');
+
+const statusLabels: Record<string, { label: string; color: string; icon: any }> = {
+  'pending_payment': { label: 'Esperando pago', color: 'text-gray-400 bg-gray-500/20', icon: Clock },
+  'awaiting_confirmation': { label: 'Pendiente de verificación', color: 'text-yellow-400 bg-yellow-500/20', icon: AlertTriangle },
+  'confirmed': { label: 'Confirmado', color: 'text-green-400 bg-green-500/20', icon: CheckCircle2 },
+  'rejected': { label: 'Rechazado', color: 'text-red-400 bg-red-500/20', icon: XCircle },
+};
+---
+
+<Layout title="Verificar Pagos - Admin">
+  <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex">
+    <AdminSidebar activePage="pagos" user={user} />
+    
+    <main class="flex-1 p-8">
+      <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <h1 class="text-3xl font-bold text-white">Verificar Pagos</h1>
+            <p class="text-gray-400 mt-1">Confirma o rechaza los pagos de los clientes</p>
+          </div>
+          
+          {pendingCount && pendingCount > 0 && (
+            <div class="bg-yellow-500/20 border border-yellow-500/30 rounded-xl px-4 py-2 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-400" />
+              <span class="text-yellow-400 font-medium">{pendingCount} pagos pendientes</span>
+            </div>
+          )}
+        </div>
+
+        <!-- Filtros -->
+        <div class="flex gap-2 mb-6">
+          <a 
+            href="?status=awaiting_confirmation"
+            class:list={[
+              "px-4 py-2 rounded-lg font-medium transition-all",
+              statusFilter === 'awaiting_confirmation' 
+                ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" 
+                : "bg-slate-800 text-gray-400 hover:text-white"
+            ]}
+          >
+            Pendientes
+          </a>
+          <a 
+            href="?status=confirmed"
+            class:list={[
+              "px-4 py-2 rounded-lg font-medium transition-all",
+              statusFilter === 'confirmed' 
+                ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                : "bg-slate-800 text-gray-400 hover:text-white"
+            ]}
+          >
+            Confirmados
+          </a>
+          <a 
+            href="?status=rejected"
+            class:list={[
+              "px-4 py-2 rounded-lg font-medium transition-all",
+              statusFilter === 'rejected' 
+                ? "bg-red-500/20 text-red-400 border border-red-500/30" 
+                : "bg-slate-800 text-gray-400 hover:text-white"
+            ]}
+          >
+            Rechazados
+          </a>
+          <a 
+            href="?status=all"
+            class:list={[
+              "px-4 py-2 rounded-lg font-medium transition-all",
+              statusFilter === 'all' 
+                ? "bg-primary/20 text-primary border border-primary/30" 
+                : "bg-slate-800 text-gray-400 hover:text-white"
+            ]}
+          >
+            Todos
+          </a>
+        </div>
+
+        <!-- Lista de pagos -->
+        {purchases && purchases.length > 0 ? (
+          <div class="space-y-4">
+            {purchases.map((purchase: any) => {
+              const status = statusLabels[purchase.payment_status] || statusLabels['pending_payment'];
+              const StatusIcon = status.icon;
+              
+              return (
+                <div class="bg-slate-800/50 rounded-xl border border-white/10 overflow-hidden">
+                  <div class="p-6">
+                    <div class="flex items-start gap-6">
+                      <!-- Comprobante de pago (miniatura) -->
+                      <div class="relative group">
+                        {purchase.payment_proof_url ? (
+                          <a href={purchase.payment_proof_url} target="_blank" class="block">
+                            <img 
+                              src={purchase.payment_proof_url} 
+                              alt="Comprobante" 
+                              class="w-24 h-24 object-cover rounded-lg border border-white/10 group-hover:border-primary/50 transition-all"
+                            />
+                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-lg flex items-center justify-center transition-all">
+                              <Eye className="w-6 h-6 text-white" />
+                            </div>
+                          </a>
+                        ) : (
+                          <div class="w-24 h-24 bg-slate-700 rounded-lg flex items-center justify-center">
+                            <Image className="w-8 h-8 text-gray-500" />
+                          </div>
+                        )}
+                      </div>
+
+                      <!-- Info de la compra -->
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-3 mb-2">
+                          <h3 class="font-semibold text-white">{purchase.giftcard?.name}</h3>
+                          <span class="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded">
+                            ${purchase.giftcard?.denomination} {purchase.giftcard?.currency}
+                          </span>
+                          <span class={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${status.color}`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {status.label}
+                          </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div class="flex items-center gap-2 text-gray-400">
+                            <User className="w-4 h-4" />
+                            <span>{purchase.user?.full_name || purchase.user?.email}</span>
+                          </div>
+                          <div class="flex items-center gap-2 text-gray-400">
+                            <CreditCard className="w-4 h-4" />
+                            <span>Deposita: {purchase.depositor_name}</span>
+                          </div>
+                          <div class="flex items-center gap-2 text-gray-400">
+                            <Calendar className="w-4 h-4" />
+                            <span>{formatDate(purchase.created_at)}</span>
+                          </div>
+                          <div class="text-primary font-bold">
+                            {formatPrice(purchase.amount)}
+                          </div>
+                        </div>
+
+                        {purchase.rejection_reason && (
+                          <div class="mt-2 text-sm text-red-400 bg-red-500/10 px-3 py-1 rounded inline-block">
+                            Motivo: {purchase.rejection_reason}
+                          </div>
+                        )}
+
+                        {purchase.confirmed_by && (
+                          <div class="mt-2 text-xs text-gray-500">
+                            {purchase.payment_status === 'confirmed' ? 'Confirmado' : 'Rechazado'} por {purchase.confirmed_by?.full_name} 
+                            {purchase.payment_confirmed_at && ` el ${formatDate(purchase.payment_confirmed_at)}`}
+                          </div>
+                        )}
+                      </div>
+
+                      <!-- Acciones -->
+                      {purchase.payment_status === 'awaiting_confirmation' && (
+                        <div class="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            class="confirm-btn bg-green-500/20 hover:bg-green-500/30 text-green-400 px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2"
+                            data-purchase-id={purchase.id}
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Confirmar
+                          </button>
+                          <button
+                            type="button"
+                            class="reject-btn bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2"
+                            data-purchase-id={purchase.id}
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Rechazar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <!-- Ver comprobante en grande -->
+                  {purchase.payment_proof_url && (
+                    <div class="border-t border-white/10 p-4 bg-slate-900/30">
+                      <a 
+                        href={purchase.payment_proof_url} 
+                        target="_blank"
+                        class="text-sm text-primary hover:text-primary/80 flex items-center gap-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Ver comprobante en tamaño completo
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="text-center py-20 bg-slate-800/30 rounded-xl border border-white/5">
+            <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              {statusFilter === 'awaiting_confirmation' ? (
+                <CheckCircle2 className="w-8 h-8 text-green-400" />
+              ) : (
+                <Clock className="w-8 h-8 text-gray-500" />
+              )}
+            </div>
+            <h3 class="text-lg font-medium text-white mb-1">
+              {statusFilter === 'awaiting_confirmation' 
+                ? '¡Todo al día!' 
+                : 'No hay pagos'}
+            </h3>
+            <p class="text-gray-400">
+              {statusFilter === 'awaiting_confirmation'
+                ? 'No hay pagos pendientes de verificación'
+                : `No hay pagos con estado "${statusLabels[statusFilter]?.label || statusFilter}"`}
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal de confirmación -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-2xl">
+      <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <CheckCircle2 className="w-8 h-8 text-green-400" />
+      </div>
+      <h3 class="text-xl font-bold text-white text-center mb-2">¿Confirmar pago?</h3>
+      <p class="text-gray-400 text-center mb-6">
+        Al confirmar, se asignará automáticamente un código al cliente. Esta acción no se puede deshacer.
+      </p>
+      <div class="flex gap-3">
+        <button 
+          id="cancel-confirm"
+          class="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all"
+        >
+          Cancelar
+        </button>
+        <button 
+          id="do-confirm"
+          class="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all"
+        >
+          Sí, confirmar pago
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de rechazo -->
+  <div id="reject-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-2xl">
+      <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <XCircle className="w-8 h-8 text-red-400" />
+      </div>
+      <h3 class="text-xl font-bold text-white text-center mb-2">¿Rechazar pago?</h3>
+      <p class="text-gray-400 text-center mb-4">
+        El cliente será notificado de que su pago fue rechazado.
+      </p>
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Motivo del rechazo (opcional)</label>
+        <input 
+          type="text" 
+          id="rejection-reason"
+          placeholder="Ej: No se recibió el depósito"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+        />
+      </div>
+      <div class="flex gap-3">
+        <button 
+          id="cancel-reject"
+          class="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all"
+        >
+          Cancelar
+        </button>
+        <button 
+          id="do-reject"
+          class="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all"
+        >
+          Sí, rechazar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin ID para las API calls -->
+  <input type="hidden" id="admin-id" value={session.user.id} />
+</Layout>
+
+<script>
+  const adminId = (document.getElementById('admin-id') as HTMLInputElement)?.value;
+  const confirmModal = document.getElementById('confirm-modal');
+  const rejectModal = document.getElementById('reject-modal');
+  const rejectionReasonInput = document.getElementById('rejection-reason') as HTMLInputElement;
+  
+  let currentPurchaseId: string | null = null;
+
+  // Confirmar pago
+  document.querySelectorAll('.confirm-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentPurchaseId = (btn as HTMLElement).dataset.purchaseId || null;
+      confirmModal?.classList.remove('hidden');
+      confirmModal?.classList.add('flex');
+    });
+  });
+
+  document.getElementById('cancel-confirm')?.addEventListener('click', () => {
+    confirmModal?.classList.add('hidden');
+    confirmModal?.classList.remove('flex');
+    currentPurchaseId = null;
+  });
+
+  document.getElementById('do-confirm')?.addEventListener('click', async () => {
+    if (!currentPurchaseId) return;
+    
+    const btn = document.getElementById('do-confirm') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+
+    try {
+      const response = await fetch('/api/confirm-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchaseId: currentPurchaseId,
+          action: 'confirm',
+          adminId
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert('Error: ' + (data.error || 'No se pudo confirmar el pago'));
+        btn.disabled = false;
+        btn.textContent = 'Sí, confirmar pago';
+      }
+    } catch (error) {
+      alert('Error al procesar la solicitud');
+      btn.disabled = false;
+      btn.textContent = 'Sí, confirmar pago';
+    }
+  });
+
+  // Rechazar pago
+  document.querySelectorAll('.reject-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentPurchaseId = (btn as HTMLElement).dataset.purchaseId || null;
+      rejectModal?.classList.remove('hidden');
+      rejectModal?.classList.add('flex');
+    });
+  });
+
+  document.getElementById('cancel-reject')?.addEventListener('click', () => {
+    rejectModal?.classList.add('hidden');
+    rejectModal?.classList.remove('flex');
+    currentPurchaseId = null;
+    if (rejectionReasonInput) rejectionReasonInput.value = '';
+  });
+
+  document.getElementById('do-reject')?.addEventListener('click', async () => {
+    if (!currentPurchaseId) return;
+    
+    const btn = document.getElementById('do-reject') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+
+    try {
+      const response = await fetch('/api/confirm-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchaseId: currentPurchaseId,
+          action: 'reject',
+          adminId,
+          rejectionReason: rejectionReasonInput?.value || ''
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert('Error: ' + (data.error || 'No se pudo rechazar el pago'));
+        btn.disabled = false;
+        btn.textContent = 'Sí, rechazar';
+      }
+    } catch (error) {
+      alert('Error al procesar la solicitud');
+      btn.disabled = false;
+      btn.textContent = 'Sí, rechazar';
+    }
+  });
+
+  // Cerrar modales al hacer clic fuera
+  [confirmModal, rejectModal].forEach(modal => {
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        currentPurchaseId = null;
+      }
+    });
+  });
+</script>

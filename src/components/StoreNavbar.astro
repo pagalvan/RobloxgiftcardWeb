@@ -1,5 +1,5 @@
 ---
-import type { UserProfile } from "@/lib/supabase";
+import { supabase, type UserProfile, type GiftCardCategory } from "@/lib/supabase";
 
 interface Props {
     user: UserProfile | null;
@@ -7,70 +7,146 @@ interface Props {
 }
 
 const { user, activePage } = Astro.props;
+
+// Obtener categorías para el dropdown y la navegación
+const { data: categories } = await supabase
+  .from("giftcard_categories")
+  .select("*")
+  .eq("is_active", true)
+  .order("name");
 ---
 
 <header
-    class="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10"
+    class="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-white/10"
 >
-    <div class="container mx-auto px-4 py-4">
-        <div class="flex items-center justify-between">
-            <a href="/" class="flex items-center gap-2">
-                <img src="/Reload.svg" alt="Reload" class="h-12 w-auto" />
+    <!-- Fila superior: Logo, Buscador, Usuario -->
+    <div class="container mx-auto px-4 py-3 md:py-4">
+        <div class="flex items-center justify-between gap-4">
+            <!-- Logo con animación -->
+            <a href="/" class="flex items-center shrink-0 group logo-container">
+                <img
+                    src="/Reload.svg"
+                    alt="Reload"
+                    class="h-14 w-auto logo-icon"
+                />
+                <img
+                    src="/images/ELOAD.png"
+                    alt="ELOAD"
+                    class="h-7 logo-text"
+                />
             </a>
 
-            <nav class="hidden md:flex items-center gap-6">
-                <a
-                    href="/tienda"
-                    class:list={[
-                        "font-medium transition-colors",
-                        activePage === "tienda"
-                            ? "text-primary"
-                            : "text-gray-400 hover:text-white",
-                    ]}
-                >
-                    Tienda
-                </a>
-                {
-                    user && (
-                        <a
-                            href="/mis-compras"
-                            class:list={[
-                                "font-medium transition-colors",
-                                activePage === "mis-compras"
-                                    ? "text-primary"
-                                    : "text-gray-400 hover:text-white",
-                            ]}
+            <!-- Buscador centrado -->
+            <div class="flex-1 max-w-2xl">
+                <form action="/tienda" method="GET" class="w-full flex items-center bg-white rounded-full shadow-lg shadow-black/10">
+                    <input
+                        type="text"
+                        name="buscar"
+                        placeholder="¿Qué estás buscando?"
+                        class="flex-1 px-5 py-3 bg-transparent text-slate-900 placeholder-gray-400 text-sm border-0 focus:outline-none"
+                    />
+                    <div class="h-6 w-px bg-gray-200"></div>
+                    <!-- Custom Dropdown -->
+                    <div class="relative" id="category-dropdown">
+                        <input type="hidden" name="categoria" id="categoria-input" value="" />
+                        <button
+                            type="button"
+                            id="dropdown-trigger"
+                            class="px-4 py-3 bg-transparent text-slate-600 text-sm border-0 focus:outline-none cursor-pointer flex items-center gap-2"
                         >
-                            Mis Compras
-                        </a>
-                    )
-                }
-            </nav>
+                            <span id="dropdown-label">Categorías</span>
+                            <svg class="w-4 h-4 text-gray-400 transition-transform duration-200" id="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div 
+                            id="dropdown-menu"
+                            class="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 opacity-0 invisible transform scale-95 transition-all duration-200 z-50 overflow-hidden"
+                        >
+                            <div class="py-2">
+                                <button
+                                    type="button"
+                                    class="dropdown-option w-full px-4 py-2.5 text-left text-sm text-slate-600 hover:bg-gray-50 transition-colors"
+                                    data-value=""
+                                    data-label="Categorías"
+                                >
+                                    Todas las categorías
+                                </button>
+                                {categories && categories.map((cat: GiftCardCategory) => (
+                                    <button
+                                        type="button"
+                                        class="dropdown-option w-full px-4 py-2.5 text-left text-sm text-slate-600 hover:bg-gray-50 transition-colors"
+                                        data-value={cat.id}
+                                        data-label={cat.name}
+                                    >
+                                        {cat.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        type="submit"
+                        class="bg-primary hover:bg-primary/90 text-white p-3 rounded-full m-1 transition-all flex items-center justify-center"
+                    >
+                        <svg
+                            class="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
 
-            <div class="flex items-center gap-4">
+            <!-- Usuario -->
+            <div class="flex items-center gap-2 shrink-0">
                 {
                     user ? (
-                        <div class="flex items-center gap-4">
-                            <div class="hidden sm:block text-right">
-                                <p class="text-sm text-white font-medium">
-                                    {user.full_name}
-                                </p>
-                                <p class="text-xs text-gray-400 capitalize">
-                                    {user.role}
-                                </p>
-                            </div>
+                        <div class="flex items-center gap-2">
+                            <!-- Favoritos (corazón) -->
+                            <a
+                                href="/favoritos"
+                                class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-full transition-all"
+                                title="Favoritos"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </a>
+                            <!-- Carrito -->
+                            <a
+                                href="/carrito"
+                                class="w-11 h-11 flex items-center justify-center text-gray-400 hover:text-primary hover:bg-white/5 rounded-full transition-all"
+                                title="Carrito"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </a>
+                            <!-- Perfil con inicial -->
                             <div class="relative group">
-                                <button class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-semibold">
+                                <button class="w-11 h-11 bg-primary/20 rounded-full flex items-center justify-center text-primary font-semibold text-lg hover:bg-primary/30 transition-all" title="Mi cuenta">
                                     {user.full_name?.charAt(0).toUpperCase()}
                                 </button>
-                                <div class="absolute right-0 top-12 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                                <div class="absolute right-0 top-12 w-48 bg-slate-800 rounded-lg shadow-xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                    <div class="p-3 border-b border-white/10">
+                                        <p class="text-sm text-white font-medium">{user.full_name}</p>
+                                        <p class="text-xs text-gray-400 capitalize">{user.role}</p>
+                                    </div>
                                     <div class="p-2">
                                         {user.role === "admin" && (
                                             <a
                                                 href="/admin/dashboard"
                                                 class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
                                             >
-                                                Ir al Panel Admin
+                                                Panel Admin
                                             </a>
                                         )}
                                         {user.role === "proveedor" && (
@@ -78,7 +154,7 @@ const { user, activePage } = Astro.props;
                                                 href="/proveedor/dashboard"
                                                 class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
                                             >
-                                                Ir al Panel Proveedor
+                                                Panel Proveedor
                                             </a>
                                         )}
                                         <a
@@ -86,6 +162,12 @@ const { user, activePage } = Astro.props;
                                             class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
                                         >
                                             Mis Compras
+                                        </a>
+                                        <a
+                                            href="/perfil"
+                                            class="block px-4 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg"
+                                        >
+                                            Mi Perfil
                                         </a>
                                         <hr class="my-2 border-white/10" />
                                         <a
@@ -102,7 +184,7 @@ const { user, activePage } = Astro.props;
                         <div class="flex items-center gap-3">
                             <a
                                 href="/auth/login"
-                                class="text-gray-400 hover:text-white transition-colors text-sm"
+                                class="text-gray-400 hover:text-white transition-colors text-sm hidden sm:block"
                             >
                                 Iniciar Sesión
                             </a>
@@ -118,4 +200,126 @@ const { user, activePage } = Astro.props;
             </div>
         </div>
     </div>
+
+    <!-- Fila inferior: Categorías centradas -->
+    <div class="border-t border-white/5 bg-slate-900/50">
+        <div class="container mx-auto px-4">
+            <nav
+                class="flex items-center justify-center gap-2 overflow-x-auto py-2 scrollbar-hide"
+            >
+                {
+                    categories && categories.map((cat: GiftCardCategory) => (
+                        <a
+                            href={`/tienda?categoria=${cat.id}`}
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                        >
+                            {cat.image_url && (
+                                <img src={cat.image_url} alt={cat.name} class="w-5 h-5 object-contain" />
+                            )}
+                            {cat.name}
+                        </a>
+                    ))
+                }
+            </nav>
+        </div>
+    </div>
 </header>
+
+<style>
+  /* Animación del logo */
+  .logo-container {
+    position: relative;
+    overflow: hidden;
+    padding-right: 0;
+    transition: padding-right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .logo-container:hover {
+    padding-right: 110px;
+  }
+  
+  .logo-icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    z-index: 2;
+  }
+  
+  .logo-text {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    z-index: 1;
+    transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.3s ease-out;
+  }
+  
+  .logo-container:hover .logo-icon {
+    transform: scale(1.05);
+  }
+  
+  .logo-container:hover .logo-text {
+    left: 60px;
+    opacity: 1;
+  }
+</style>
+
+<script>
+  // Custom Dropdown functionality
+  const dropdownTrigger = document.getElementById('dropdown-trigger');
+  const dropdownMenu = document.getElementById('dropdown-menu');
+  const dropdownArrow = document.getElementById('dropdown-arrow');
+  const dropdownLabel = document.getElementById('dropdown-label');
+  const categoriaInput = document.getElementById('categoria-input') as HTMLInputElement;
+  const dropdownOptions = document.querySelectorAll('.dropdown-option');
+
+  let isDropdownOpen = false;
+
+  function toggleDropdown() {
+    isDropdownOpen = !isDropdownOpen;
+    if (isDropdownOpen) {
+      dropdownMenu?.classList.remove('opacity-0', 'invisible', 'scale-95');
+      dropdownMenu?.classList.add('opacity-100', 'visible', 'scale-100');
+      dropdownArrow?.classList.add('rotate-180');
+    } else {
+      dropdownMenu?.classList.add('opacity-0', 'invisible', 'scale-95');
+      dropdownMenu?.classList.remove('opacity-100', 'visible', 'scale-100');
+      dropdownArrow?.classList.remove('rotate-180');
+    }
+  }
+
+  function closeDropdown() {
+    isDropdownOpen = false;
+    dropdownMenu?.classList.add('opacity-0', 'invisible', 'scale-95');
+    dropdownMenu?.classList.remove('opacity-100', 'visible', 'scale-100');
+    dropdownArrow?.classList.remove('rotate-180');
+  }
+
+  dropdownTrigger?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleDropdown();
+  });
+
+  dropdownOptions.forEach((option) => {
+    option.addEventListener('click', (e) => {
+      e.preventDefault();
+      const value = (option as HTMLElement).dataset.value || '';
+      const label = (option as HTMLElement).dataset.label || 'Categorías';
+      
+      if (categoriaInput) categoriaInput.value = value;
+      if (dropdownLabel) dropdownLabel.textContent = label;
+      
+      closeDropdown();
+    });
+  });
+
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('category-dropdown');
+    if (dropdown && !dropdown.contains(e.target as Node)) {
+      closeDropdown();
+    }
+  });
+</script>

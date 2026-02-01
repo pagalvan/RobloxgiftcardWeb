@@ -1,0 +1,408 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { supabase, type UserProfile } from "@/lib/supabase";
+import { ChevronLeft, Shield, Clock, CheckCircle2, Upload, Phone } from "lucide-react";
+import { formatPrice } from "@/lib/utils";
+import StoreNavbar from "@/components/StoreNavbar.astro";
+
+const { id } = Astro.params;
+
+// Verificar autenticación
+const { data: { session } } = await supabase.auth.getSession();
+
+if (!session) {
+  return Astro.redirect('/auth/login?redirect=/checkout/' + id);
+}
+
+const { data: userData } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', session.user.id)
+  .single();
+
+const user = userData as UserProfile;
+
+// Obtener la giftcard
+const { data: giftcard } = await supabase
+  .from('giftcards')
+  .select(`
+    *,
+    category:giftcard_categories(*)
+  `)
+  .eq('id', id)
+  .single();
+
+if (!giftcard) {
+  return Astro.redirect('/tienda');
+}
+
+// Obtener códigos disponibles (stock real)
+const { count: availableCodes } = await supabase
+  .from('giftcard_codes')
+  .select('*', { count: 'exact', head: true })
+  .eq('giftcard_id', id)
+  .eq('is_sold', false);
+
+const stockReal = availableCodes || 0;
+const hasStock = stockReal > 0;
+
+if (!hasStock) {
+  return Astro.redirect('/giftcard/' + id + '?error=no-stock');
+}
+
+// Obtener configuración de Nequi
+const { data: settings } = await supabase
+  .from('store_settings')
+  .select('*')
+  .in('setting_key', ['nequi_phone', 'nequi_name']);
+
+const nequiPhone = settings?.find(s => s.setting_key === 'nequi_phone')?.setting_value || '3001234567';
+const nequiName = settings?.find(s => s.setting_key === 'nequi_name')?.setting_value || 'Nombre del Vendedor';
+---
+
+<Layout title={`Checkout - ${giftcard.name}`}>
+  <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    <StoreNavbar user={user} activePage="" />
+
+    <main class="container mx-auto px-4 py-8">
+      <div class="max-w-4xl mx-auto">
+        <!-- Volver -->
+        <a href={`/giftcard/${id}`} class="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors">
+          <ChevronLeft className="w-5 h-5" />
+          Volver al producto
+        </a>
+
+        <div class="grid lg:grid-cols-2 gap-8">
+          <!-- Resumen del pedido -->
+          <div class="bg-slate-800/50 rounded-2xl border border-white/10 p-6">
+            <h2 class="text-xl font-bold text-white mb-6">Resumen del pedido</h2>
+            
+            <div class="flex gap-4 p-4 bg-slate-900/50 rounded-xl mb-6">
+              <div class="w-20 h-20 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center shrink-0">
+                {giftcard.image_url ? (
+                  <img src={giftcard.image_url} alt={giftcard.name} class="h-12 object-contain" />
+                ) : (
+                  <span class="text-3xl font-bold text-white/30">{giftcard.name.charAt(0)}</span>
+                )}
+              </div>
+              <div class="flex-1">
+                <h3 class="font-semibold text-white">{giftcard.name}</h3>
+                <p class="text-sm text-gray-400">{giftcard.category?.name}</p>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded">
+                    ${giftcard.denomination} {giftcard.currency}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3 mb-6">
+              <div class="flex justify-between text-gray-400">
+                <span>Subtotal</span>
+                <span>{formatPrice(giftcard.price)}</span>
+              </div>
+              <div class="flex justify-between text-gray-400">
+                <span>Comisión</span>
+                <span class="text-green-400">$0</span>
+              </div>
+              <div class="border-t border-white/10 pt-3 flex justify-between">
+                <span class="text-white font-semibold">Total a pagar</span>
+                <span class="text-2xl font-bold text-primary">{formatPrice(giftcard.price)}</span>
+              </div>
+            </div>
+
+            <!-- Información de seguridad -->
+            <div class="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+              <div class="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 class="font-medium text-green-400">Compra Segura</h4>
+                  <p class="text-sm text-gray-400 mt-1">
+                    El código solo se te entregará después de verificar tu pago. No hacemos entregas automáticas para protegerte de fraudes.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario de pago -->
+          <div class="bg-slate-800/50 rounded-2xl border border-white/10 p-6">
+            <h2 class="text-xl font-bold text-white mb-6">Método de Pago</h2>
+
+            <!-- Nequi Badge -->
+            <div class="bg-gradient-to-r from-[#E6007A] to-[#FF3399] rounded-xl p-4 mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-2">
+                  <img src="/images/nequilogo.png" alt="Nequi" class="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h3 class="text-white font-bold text-lg">Pago con Nequi</h3>
+                  <p class="text-white/80 text-sm">Transferencia instantánea</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Datos para transferir -->
+            <div class="bg-slate-900/50 rounded-xl p-4 mb-6">
+              <h4 class="text-white font-medium mb-4 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-primary" />
+                Envía el pago a:
+              </h4>
+              
+              <div class="space-y-3">
+                <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                  <span class="text-gray-400">Número Nequi</span>
+                  <div class="flex items-center gap-2">
+                    <span id="nequi-phone" class="text-white font-mono font-bold">{nequiPhone}</span>
+                    <button 
+                      type="button" 
+                      id="copy-phone"
+                      class="text-xs bg-primary/20 hover:bg-primary/30 text-primary px-2 py-1 rounded transition-all"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                  <span class="text-gray-400">Nombre</span>
+                  <span class="text-white font-medium">{nequiName}</span>
+                </div>
+                
+                <div class="flex justify-between items-center p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <span class="text-yellow-400">Monto exacto</span>
+                  <span class="text-yellow-400 font-bold">{formatPrice(giftcard.price)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario -->
+            <form id="checkout-form" class="space-y-4">
+              <input type="hidden" name="giftcard_id" value={giftcard.id} />
+              <input type="hidden" name="amount" value={giftcard.price} />
+              <input type="hidden" name="user_id" value={session.user.id} />
+
+              <!-- Nombre del depositante -->
+              <div>
+                <label for="depositor_name" class="block text-sm font-medium text-gray-300 mb-2">
+                  Nombre de quien deposita *
+                </label>
+                <input
+                  type="text"
+                  id="depositor_name"
+                  name="depositor_name"
+                  required
+                  placeholder="Como aparece en Nequi"
+                  class="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                />
+              </div>
+
+              <!-- Subir comprobante -->
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                  Captura del comprobante *
+                </label>
+                <div 
+                  id="upload-zone"
+                  class="relative border-2 border-dashed border-white/20 hover:border-primary/50 rounded-xl p-6 text-center cursor-pointer transition-all"
+                >
+                  <input
+                    type="file"
+                    id="payment_proof"
+                    name="payment_proof"
+                    accept="image/*"
+                    required
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div id="upload-content">
+                    <Upload className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+                    <p class="text-gray-400">Haz clic o arrastra tu captura aquí</p>
+                    <p class="text-xs text-gray-500 mt-1">PNG, JPG hasta 5MB</p>
+                  </div>
+                  <div id="upload-preview" class="hidden">
+                    <img id="preview-image" src="" alt="Preview" class="max-h-40 mx-auto rounded-lg" />
+                    <p id="preview-name" class="text-sm text-gray-400 mt-2"></p>
+                    <button type="button" id="remove-image" class="text-red-400 text-sm mt-2 hover:text-red-300">
+                      Cambiar imagen
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Advertencia -->
+              <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 class="font-medium text-amber-400">Tiempo de verificación</h4>
+                    <p class="text-sm text-gray-400 mt-1">
+                      Tu pago será verificado manualmente. Recibirás el código una vez confirmemos el depósito (usualmente en minutos).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botón enviar -->
+              <button
+                type="submit"
+                id="submit-btn"
+                class="w-full py-4 bg-gradient-to-r from-primary to-red-500 hover:from-primary/90 hover:to-red-500/90 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Ya pagué, enviar comprobante</span>
+              </button>
+            </form>
+
+            <!-- Estado de envío -->
+            <div id="submit-status" class="hidden mt-4">
+              <div id="status-loading" class="hidden flex items-center justify-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                <div class="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-blue-400">Procesando tu compra...</span>
+              </div>
+              <div id="status-success" class="hidden p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+                <div class="flex items-center gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-green-400" />
+                  <div>
+                    <h4 class="font-medium text-green-400">¡Comprobante enviado!</h4>
+                    <p id="success-message" class="text-sm text-gray-400">El admin revisará tu pago y recibirás tu código pronto.</p>
+                    <p class="text-sm text-gray-500 mt-1">Redirigiendo a tus compras...</p>
+                  </div>
+                </div>
+              </div>
+              <div id="status-error" class="hidden p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <p id="error-message" class="text-red-400"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<script>
+  // Copiar número de teléfono
+  const copyPhoneBtn = document.getElementById('copy-phone');
+  const nequiPhone = document.getElementById('nequi-phone');
+  
+  copyPhoneBtn?.addEventListener('click', () => {
+    navigator.clipboard.writeText(nequiPhone?.textContent || '');
+    copyPhoneBtn.textContent = '✓ Copiado';
+    setTimeout(() => {
+      copyPhoneBtn.textContent = 'Copiar';
+    }, 2000);
+  });
+
+  // Preview de imagen
+  const fileInput = document.getElementById('payment_proof') as HTMLInputElement;
+  const uploadContent = document.getElementById('upload-content');
+  const uploadPreview = document.getElementById('upload-preview');
+  const previewImage = document.getElementById('preview-image') as HTMLImageElement;
+  const previewName = document.getElementById('preview-name');
+  const removeImageBtn = document.getElementById('remove-image');
+  const uploadZone = document.getElementById('upload-zone');
+
+  fileInput?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      // Validar tamaño (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen es muy grande. Máximo 5MB.');
+        fileInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (previewImage && e.target?.result) {
+          previewImage.src = e.target.result as string;
+        }
+        if (previewName) previewName.textContent = file.name;
+        uploadContent?.classList.add('hidden');
+        uploadPreview?.classList.remove('hidden');
+        uploadZone?.classList.add('border-primary/50');
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  removeImageBtn?.addEventListener('click', () => {
+    fileInput.value = '';
+    uploadContent?.classList.remove('hidden');
+    uploadPreview?.classList.add('hidden');
+    uploadZone?.classList.remove('border-primary/50');
+  });
+
+  // Drag and drop visual feedback
+  uploadZone?.addEventListener('dragover', () => {
+    uploadZone.classList.add('border-primary', 'bg-primary/5');
+  });
+  
+  uploadZone?.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('border-primary', 'bg-primary/5');
+  });
+  
+  uploadZone?.addEventListener('drop', () => {
+    uploadZone.classList.remove('border-primary', 'bg-primary/5');
+  });
+
+  // Enviar formulario
+  const form = document.getElementById('checkout-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const submitStatus = document.getElementById('submit-status');
+  const statusLoading = document.getElementById('status-loading');
+  const statusSuccess = document.getElementById('status-success');
+  const statusError = document.getElementById('status-error');
+  const errorMessage = document.getElementById('error-message');
+  const successMessage = document.getElementById('success-message');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(form);
+    const file = fileInput?.files?.[0];
+    
+    if (!file) {
+      alert('Por favor sube la captura del comprobante');
+      return;
+    }
+
+    // Deshabilitar botón
+    submitBtn.disabled = true;
+    submitStatus?.classList.remove('hidden');
+    statusLoading?.classList.remove('hidden');
+    statusSuccess?.classList.add('hidden');
+    statusError?.classList.add('hidden');
+
+    try {
+      const response = await fetch('/api/create-purchase', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        statusLoading?.classList.add('hidden');
+        statusSuccess?.classList.remove('hidden');
+        
+        // Mostrar mensaje personalizado del servidor
+        if (successMessage && data.message) {
+          successMessage.textContent = data.message;
+        }
+        
+        // Redirigir a mis compras después de 3 segundos
+        setTimeout(() => {
+          window.location.href = '/mis-compras?status=pending';
+        }, 3000);
+      } else {
+        throw new Error(data.error || 'Error al procesar la compra');
+      }
+    } catch (error: any) {
+      statusLoading?.classList.add('hidden');
+      statusError?.classList.remove('hidden');
+      if (errorMessage) errorMessage.textContent = error.message;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
